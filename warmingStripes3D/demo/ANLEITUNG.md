@@ -131,6 +131,12 @@ verlustfrei und bleibt auch bei eigenen Aggregationen sinnvoll.
 
 ## 4. Explorativer Aufbau (empfohlene Seite)
 
+> **Wenn Power BI „Es werden nicht alle Werte angezeigt" meldet:** Ab Version
+> 1.2.0.0 verarbeitet das Visual bis zu 1000 Orte und lädt große Datenmengen
+> segmentweise nach. Ältere Pakete waren auf 100 Orte gedeckelt — dann hilft
+> nur das Update. Bleibt die Meldung trotz 1.2.0.0, ist die Ortszahl über
+> 1000: dann per `Region`- oder `Land`-Slicer eingrenzen.
+
 - **Slicer `Region`** (Schaltflächen): Kontinent bzw. Europa ↔ Welt umschalten —
   das Visual baut die Ortsachse automatisch neu auf. Beim GHCN-Datensatz ist das
   der wichtigste Slicer: 758 Stationen gleichzeitig sind zwar darstellbar, eine

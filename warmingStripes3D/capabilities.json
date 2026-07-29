@@ -146,7 +146,7 @@
             "categorical": {
                 "categories": {
                     "for": { "in": "year" },
-                    "dataReductionAlgorithm": { "top": { "count": 500 } }
+                    "dataReductionAlgorithm": { "window": { "count": 30000 } }
                 },
                 "values": {
                     "group": {
@@ -154,7 +154,7 @@
                         "select": [
                             { "bind": { "to": "measure" } }
                         ],
-                        "dataReductionAlgorithm": { "top": { "count": 100 } }
+                        "dataReductionAlgorithm": { "top": { "count": 1000 } }
                     }
                 }
             }

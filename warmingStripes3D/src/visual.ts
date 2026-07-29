@@ -211,12 +211,30 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         this.events.renderingStarted(options);
         try {
+            const dataView = options.dataViews?.[0];
             this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(
                 VisualFormattingSettingsModel,
-                options.dataViews?.[0]
+                dataView
             );
 
-            const parsed = this.parse(options.dataViews?.[0]);
+            /* Power BI liefert große Datenmengen in Segmenten. Ohne dieses
+               Nachfordern meldet der Bericht „Es werden nicht alle Werte
+               angezeigt" und das Feld bliebe unvollständig. aggregateSegments
+               sammelt die Segmente im selben DataView auf. */
+            const moreComing = dataView?.metadata?.segment
+                ? this.host.fetchMoreData(true) : false;
+
+            /* Jedes Segment neu aufzubauen hieße, den WebGL-Kontext mehrfach
+               zu verwerfen und neu anzulegen — Browser begrenzen die Zahl
+               paralleler Kontexte. Also: erstes Segment sofort zeigen, damit
+               etwas zu sehen ist, Zwischenstände überspringen, den
+               vollständigen Stand einmal sauber zeichnen. */
+            if (moreComing && this.viz) {
+                this.events.renderingFinished(options);
+                return;
+            }
+
+            const parsed = this.parse(dataView);
             const structural = !parsed || !this.parsed || !this.viz || parsed.signature !== this.parsed.signature;
             this.parsed = parsed;
 
