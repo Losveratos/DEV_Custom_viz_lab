@@ -115,7 +115,8 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     /* ---------- Szene ---------- */
     const scene = new THREE.Scene();
     scene.background = new THREE.Color().setStyle(THEMES.light.bg);
-    scene.fog = new THREE.Fog(new THREE.Color().setStyle(THEMES.light.bg), 190, 430);
+    const fog = new THREE.Fog(new THREE.Color().setStyle(THEMES.light.bg), 190, 430);
+    scene.fog = fog;
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 900);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
@@ -143,9 +144,33 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     const zOf = (k: number) => (k - (order.length - 1) / 2) * CD;
     const yOf = (v: number) => v * YU * state.vScale;
     const off = (ci: number) => state.offsets[ci] || 0;
-    const raw = (ci: number, i: number) => {
+    /* Datenlücken: Stationsreihen decken selten den ganzen Zeitraum ab.
+       has() entscheidet, ob eine Marke überhaupt gezeichnet wird; raw()
+       hält für die Flächenformen den nächstgelegenen bekannten Wert, damit
+       keine künstlichen Kältesprünge auf 0 entstehen. */
+    const has = (ci: number, i: number) => {
         const v = data.cities[ci].a[i];
-        return v === null || v === undefined || !isFinite(v) ? 0 : v;
+        return v !== null && v !== undefined && isFinite(v);
+    };
+    const nearest: (number[] | null)[] = data.cities.map(() => null);
+    const raw = (ci: number, i: number): number => {
+        const a = data.cities[ci].a;
+        if (has(ci, i)) return a[i] as number;
+        let map = nearest[ci];
+        if (!map) {
+            // je Index den nächstgelegenen belegten Jahrgang vormerken
+            map = new Array(nY).fill(-1);
+            let last = -1;
+            for (let k = 0; k < nY; k++) { if (has(ci, k)) last = k; map[k] = last; }
+            let next = -1;
+            for (let k = nY - 1; k >= 0; k--) {
+                if (has(ci, k)) next = k;
+                else if (map[k] < 0 || (next >= 0 && next - k < k - map[k])) map[k] = next;
+            }
+            nearest[ci] = map;
+        }
+        const j = map[i];
+        return j < 0 ? 0 : (a[j] as number);
     };
     const val = (ci: number, i: number) => {
         const o = off(ci), w = state.smooth | 0;
@@ -216,6 +241,7 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
                 tmpP.set(xOf(i), 0, z);
                 tmpS.set(1, Math.abs(h) < 0.05 ? 0.05 : Math.abs(h), 1);
                 if (h < 0) tmpS.y = -tmpS.y;
+                if (!has(ci, i)) tmpS.set(0, 0, 0);   // Lücke: keine Marke
                 bars.setMatrixAt(n, tmpM.compose(tmpP, tmpQ.identity(), tmpS));
                 const c = shade(ci, i, ramp(v));
                 tmpC.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
@@ -333,8 +359,10 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
             const pos = g.attributes.position.array, col = g.attributes.color.array;
             const H = PLATE_H * state.vScale;
             for (let i = 0; i < nY; i++) {
-                const v = val(ci, i), c = shade(ci, i, ramp(v)), x0 = xOf(i) - CW / 2, x1 = xOf(i) + CW / 2, a = i * 4;
-                const q = [[x0, 0], [x1, 0], [x1, H], [x0, H]];
+                const v = val(ci, i), c = shade(ci, i, ramp(v)), a = i * 4;
+                const gap = !has(ci, i);   // Lücke: entartete Fläche, nichts sichtbar
+                const x0 = gap ? 0 : xOf(i) - CW / 2, x1 = gap ? 0 : xOf(i) + CW / 2;
+                const q = [[x0, 0], [x1, 0], [x1, gap ? 0 : H], [x0, gap ? 0 : H]];
                 for (let j = 0; j < 4; j++) {
                     pos[(a + j) * 3] = q[j][0]; pos[(a + j) * 3 + 1] = q[j][1]; pos[(a + j) * 3 + 2] = z;
                     tmpC.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
@@ -479,8 +507,11 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         labelStore.tick.forEach(o => put(o, tickX, yOf(o.v), tickZ, false));
         const cl = labelStore.city;
         if (cl.length > 1) {
+            /* Ausdünnen bis die Labels sich nicht mehr überlappen — der Faktor
+               muss mit der Ortszahl mitwachsen, ein fester Deckel lässt bei
+               vielen Stationen alles ineinanderlaufen. */
             const gap = Math.abs(cl[cl.length - 1].sy - cl[0].sy) / (cl.length - 1);
-            const every = gap < 8 ? 4 : gap < 13 ? 2 : 1;
+            const every = gap > 0 ? Math.max(1, Math.ceil(13 / gap)) : cl.length;
             cl.forEach((o, k) => { if (every > 1 && k % every !== 0) o.hidden = true; });
         }
         Object.values(labelStore).forEach(list => list.forEach((o: any) => { o.el.style.opacity = o.hidden ? "0" : ""; }));
@@ -511,19 +542,38 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         const right = new THREE.Vector3().crossVectors(up, dir).normalize();
         if (!isFinite(right.x) || right.lengthSq() < 1e-6) right.set(1, 0, 0);
         const camUp = new THREE.Vector3().crossVectors(dir, right).normalize();
-        let w = 0, h = 0;
+        const vFov = camera.fov * Math.PI / 180, hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.2));
+        const tanH = Math.tan(hFov / 2), tanV = Math.tan(vFov / 2);
+        /* Pro Ecke exakt lösen statt nur gegen die Mittelebene: bei einem tiefen
+           Feld projizieren die kameranahen Ecken deutlich größer und liefen
+           sonst aus dem Bild. Kamera sitzt bei p = dist*dir, also ist die
+           Tiefe einer Ecke (dist − p·dir); daraus folgt die Mindestdistanz. */
+        let d = 0;
         for (const sx of [X0, X1]) for (const sy of [yLo, yHi]) for (const sz of [Z0, Z1]) {
             const p = new THREE.Vector3(sx - cx, sy - cy, sz - cz);
-            w = Math.max(w, Math.abs(p.dot(right)));
-            h = Math.max(h, Math.abs(p.dot(camUp)));
+            const along = p.dot(dir);
+            d = Math.max(d, along + Math.abs(p.dot(right)) / tanH,
+                            along + Math.abs(p.dot(camUp)) / tanV);
         }
-        const vFov = camera.fov * Math.PI / 180, hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.2));
-        const d = Math.max(w / Math.tan(hFov / 2), h / Math.tan(vFov / 2));
         return Math.max(24, d * 1.12 * (zoom || 1) * zoomMul);
     }
     function centreTarget(v: THREE.Vector3) {
         const [yLo, yHi] = yRange();
         v.set((X0 + X1) / 2, (yLo + yHi) / 2, (Z0 + Z1) / 2);
+    }
+    /* Nebel und Rückebene an die tatsächliche Feldgröße koppeln. Feste Werte
+       verschlucken bei vielen Orten das halbe Feld: der Abstand wächst mit der
+       Ausdehnung, die Staffelung muss mitwachsen. */
+    function boundingRadius() {
+        const [yLo, yHi] = yRange();
+        return Math.hypot((X1 - X0) / 2, (yHi - yLo) / 2, (Z1 - Z0) / 2);
+    }
+    function updateDepth() {
+        const R = boundingRadius();
+        fog.near = cam.dist + R * 0.75;
+        fog.far = cam.dist + R * 4.5;
+        const far = cam.dist + R * 5;
+        if (Math.abs(camera.far - far) > 1) { camera.far = far; camera.updateProjectionMatrix(); }
     }
     function applyCam() {
         const sp = Math.sin(cam.phi);
@@ -532,6 +582,7 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
             cam.target.y + cam.dist * Math.cos(cam.phi),
             cam.target.z + cam.dist * sp * Math.sin(cam.theta));
         camera.lookAt(cam.target);
+        updateDepth();
     }
     function setPreset(name: string) {
         presetName = PRESETS[name] ? name : "iso";

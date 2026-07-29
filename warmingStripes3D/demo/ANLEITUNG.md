@@ -8,27 +8,65 @@ und den mitgelieferten Demo-Daten.
 Power BI Desktop → *Einfügen → Weitere Visuals → Aus einer Datei importieren*
 → `dist/warmingStripes3D….pbiviz` auswählen.
 
-## 2. Demo-Daten laden
+## 2. Daten laden
 
-*Daten abrufen → Text/CSV* → `demo/waermestreifen_demo.csv` (UTF-8, Komma-getrennt).
+Es liegen **zwei** Datensätze bei — beide im identischen Spaltenschema, also
+gegeneinander austauschbar:
+
+### `waermestreifen_ghcn.csv` — echte Messdaten (empfohlen)
+
+758 Wetterstationen aus 70 Ländern, 1850–2024, direkt aus **NOAA GHCN-Daily**
+aggregiert (public domain). Jede Zeile ist ein gemessener Stationswert, keine
+Rekonstruktion. Reproduzierbar mit `tools/fetch_ghcn.py` (lädt selbst von S3).
+
+### `waermestreifen_demo.csv` — kuratierte 60 Städte
+
+Europa + Welt mit je 30 bekannten Städten, 1850–2025. Das Feldmittel folgt
+jahrgenau HadCRUT5 (Met Office), die Verteilung der einzelnen Städte um dieses
+Mittel ist jedoch **rekonstruiert** — Einzelstadtwerte sind hier keine
+Stationsdaten. Vorteil: übersichtliche, bekannte Ortsnamen für Präsentationen.
+
+### Spaltenschema (beide Dateien)
+
+*Daten abrufen → Text/CSV*, UTF-8, Komma-getrennt.
 
 | Spalte | Bedeutung |
 |---|---|
-| `Region` | `Europa` oder `Welt` (je 30 Städte) |
-| `Ort`, `Land` | Stadtname, ISO-Länderkürzel |
+| `Region` | GHCN: Kontinent · Demo: `Europa`/`Welt` |
+| `Ort`, `Land` | Stations-/Stadtname, ISO-Länderkürzel |
 | `Breitengrad`, `Laengengrad` | Koordinaten (für eigene Karten-Visuals) |
-| `MittelC_1961_1990` | absolutes Jahresmittel der Stadt in der WMO-Referenz |
-| `Jahr` | 1850–2025 |
+| `MittelC_1961_1990` | absolutes Jahresmittel des Orts in der WMO-Referenz |
+| `Jahr` | GHCN: 1850–2024 · Demo: 1850–2025 |
 | `AnomalieC` | Jahresanomalie in °C **gegen 1961–1990** |
 
 Wichtig: `Jahr` als *Ganze Zahl* belassen und im Visual **„Nicht zusammenfassen"**
 wählen. `AnomalieC` als Dezimalzahl.
 
-**Hinweis zur Datenqualität:** Das 30-Städte-Feldmittel je Region folgt jahrgenau
-der realen HadCRUT5-Reihe (Met Office; Europa: Nordhemisphäre ×1,45 skaliert,
-Welt: global). Die Verteilung der einzelnen Städte um das Feldmittel ist
-rekonstruiert — Einzelstadtwerte sind keine Stationsdaten. Für Publikationen
-Stationsreihen (ECA&D, DWD-CDC, Berkeley Earth) einsetzen.
+### Methodik der GHCN-Aufbereitung
+
+- Tageswerte mit gesetztem Qualitätsflag werden verworfen.
+- Monatsmittel = (TMAX+TMIN)/2 bei je ≥20 Messtagen, sonst TAVG bei ≥20 Tagen.
+- Jahresmittel: ≥11 Monate vorhanden; ein einzelner Fehlmonat wird mit der
+  Monats-Klimatologie 1961–1990 der Station gefüllt (verhindert saisonale
+  Verzerrung durch fehlende Winter- oder Sommermonate).
+- Verworfen werden: Einzeljahr-Ausreißer (>4 °C gegen den Median der ±5
+  Nachbarjahre) sowie nicht-polare Stationen mit mehrjährigen Sprüngen
+  >4,2 °C — das sind praktisch immer Stationsumzüge, keine Klimasignale.
+- Stationsfilter: ≥25 Basisjahre in 1961–1990, ≥60 Jahre gesamt, ≥3 Jahre
+  in 2020–2024, Reihenbeginn ≤1957.
+
+**Plausibilitätsprüfung:** Über die 153 durchgehenden Reihen seit 1900 ergeben
+sich als Dekadenmittel −0,42 °C (1900er), −0,15 °C (1940er), −0,22 °C (1960er),
++0,12 °C (1980er), +0,89 °C (2000er), +1,60 °C (2020–24). Das reproduziert die
+bekannte Kurve inklusive der Abkühlungsdelle der 1960er. Landstationen erwärmen
+sich schneller als der globale Land-See-Mittelwert — der höhere Endwert
+gegenüber HadCRUT5 ist also erwartet, kein Fehler.
+
+**Stationen je Region:** Asien 342, Europa 172, Nordamerika 96, Ozeanien 43,
+Afrika 22, Südamerika 3, Antarktis 1. Die Schieflage spiegelt die reale
+Verfügbarkeit langer, frei zugänglicher Reihen — Südamerika und Afrika sind in
+GHCN-Daily für lange Zeiträume dünn besetzt. Für eine ausgewogene Weltkarte
+daher eher nach `Region` filtern als alles gleichzeitig zeigen.
 
 ## 3. Visual befüllen
 
@@ -43,9 +81,12 @@ verlustfrei und bleibt auch bei eigenen Aggregationen sinnvoll.
 
 ## 4. Explorativer Aufbau (empfohlene Seite)
 
-- **Slicer `Region`** (Schaltflächen): Europa ↔ Welt umschalten — das Visual
-  baut die Ortsachse automatisch neu auf.
-- **Slicer `Ort`** (Mehrfachauswahl): Städte ein-/ausblenden.
+- **Slicer `Region`** (Schaltflächen): Kontinent bzw. Europa ↔ Welt umschalten —
+  das Visual baut die Ortsachse automatisch neu auf. Beim GHCN-Datensatz ist das
+  der wichtigste Slicer: 758 Stationen gleichzeitig sind zwar darstellbar, eine
+  einzelne Region liest sich aber deutlich besser.
+- **Slicer `Land`** (Mehrfachauswahl, nur GHCN sinnvoll): 70 Länder zur Auswahl.
+- **Slicer `Ort`** (Mehrfachauswahl): Stationen/Städte ein-/ausblenden.
 - **Slicer `Jahr`** (Bereich): Zeitfenster einschränken — Achsen, Kamera und
   Raster passen sich an.
 - Interaktion im Visual: **Ziehen** = drehen, **Rad** = zoomen,

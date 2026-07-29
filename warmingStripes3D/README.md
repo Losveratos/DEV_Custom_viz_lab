@@ -62,4 +62,9 @@ Fertiges Paket: `dist/warmingStripes3D….pbiviz` → in Power BI importieren
 - `src/visual.ts` — Power-BI-Wiring: DataView-Parsing (grouped categorical),
   Selektion/Highlights, Tooltips, Kontextmenü, Toolbar, Legende, Animation
 - `src/settings.ts` — Formatbereich-Modell
-- `demo/` — reale Demo-Zeitreihen (HadCRUT5-kalibriert) + Report-Anleitung
+- `demo/` — Datensätze + Report-Anleitung:
+  `waermestreifen_ghcn.csv` (758 echte Wetterstationen aus 70 Ländern,
+  1850–2024, aus NOAA GHCN-Daily) und `waermestreifen_demo.csv`
+  (60 kuratierte Städte, HadCRUT5-kalibriertes Feldmittel)
+- `tools/fetch_ghcn.py` — reproduzierbare Datenpipeline: lädt GHCN-Daily von
+  S3, wählt Stationen aus, rechnet Jahresmittel und Anomalien, schreibt die CSV
