@@ -1,0 +1,175 @@
+{
+    "dataRoles": [
+        {
+            "displayName": "Jahr",
+            "name": "year",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Ort",
+            "name": "place",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Anomalie (°C)",
+            "name": "measure",
+            "kind": "Measure"
+        }
+    ],
+    "objects": {
+        "ansicht": {
+            "properties": {
+                "form": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Säulenfeld", "value": "bars" },
+                            { "displayName": "Relief", "value": "terrain" },
+                            { "displayName": "Bänder", "value": "curtain" },
+                            { "displayName": "Streifen-Tafeln", "value": "stripes" }
+                        ]
+                    }
+                },
+                "scheme": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Wärmestreifen (blau-rot)", "value": "stripes" },
+                            { "displayName": "Stahl", "value": "steel" },
+                            { "displayName": "Monochrom", "value": "mono" }
+                        ]
+                    }
+                },
+                "theme": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Hell", "value": "light" },
+                            { "displayName": "Dunkel", "value": "dark" }
+                        ]
+                    }
+                },
+                "vScale": {
+                    "type": { "numeric": true }
+                },
+                "grid": {
+                    "type": { "bool": true }
+                },
+                "labels": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Achsen", "value": "axes" },
+                            { "displayName": "Ohne", "value": "min" }
+                        ]
+                    }
+                },
+                "toolbar": {
+                    "type": { "bool": true }
+                },
+                "legend": {
+                    "type": { "bool": true }
+                }
+            }
+        },
+        "perspektive": {
+            "properties": {
+                "preset": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Übersicht ¾", "value": "iso" },
+                            { "displayName": "Aufsicht — klassische Streifen", "value": "top" },
+                            { "displayName": "Zeitachse", "value": "time" },
+                            { "displayName": "Ortsprofil", "value": "place" },
+                            { "displayName": "Streiflicht", "value": "graze" }
+                        ]
+                    }
+                }
+            }
+        },
+        "referenz": {
+            "properties": {
+                "modus": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Werte wie geliefert", "value": "asis" },
+                            { "displayName": "Auf Periode re-referenzieren", "value": "periode" }
+                        ]
+                    }
+                },
+                "von": {
+                    "type": { "numeric": true }
+                },
+                "bis": {
+                    "type": { "numeric": true }
+                }
+            }
+        },
+        "analyse": {
+            "properties": {
+                "smooth": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Rohdaten · Einzeljahre", "value": "0" },
+                            { "displayName": "5-jähriges Mittel", "value": "2" },
+                            { "displayName": "11-jähriges Mittel", "value": "5" },
+                            { "displayName": "21-jähriges Mittel", "value": "10" }
+                        ]
+                    }
+                },
+                "sort": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Datenreihenfolge", "value": "data" },
+                            { "displayName": "Alphabetisch", "value": "name" },
+                            { "displayName": "Letztes Jahr · warm → kalt", "value": "last" },
+                            { "displayName": "Mittel letzte 5 Jahre · warm → kalt", "value": "avg5" },
+                            { "displayName": "Erwärmung gesamt · stark → schwach", "value": "trend" }
+                        ]
+                    }
+                }
+            }
+        },
+        "animation": {
+            "properties": {
+                "seconds": {
+                    "type": { "numeric": true }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "conditions": [
+                {
+                    "year": { "max": 1 },
+                    "place": { "max": 1 },
+                    "measure": { "max": 1 }
+                }
+            ],
+            "categorical": {
+                "categories": {
+                    "for": { "in": "year" },
+                    "dataReductionAlgorithm": { "top": { "count": 500 } }
+                },
+                "values": {
+                    "group": {
+                        "by": "place",
+                        "select": [
+                            { "bind": { "to": "measure" } }
+                        ],
+                        "dataReductionAlgorithm": { "top": { "count": 100 } }
+                    }
+                }
+            }
+        }
+    ],
+    "sorting": {
+        "default": {}
+    },
+    "tooltips": {
+        "supportedTypes": {
+            "default": true,
+            "canvas": true
+        }
+    },
+    "supportsHighlight": true,
+    "supportsMultiVisualSelection": true,
+    "privileges": []
+}

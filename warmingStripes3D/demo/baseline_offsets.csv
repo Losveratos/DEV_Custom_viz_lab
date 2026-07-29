@@ -1,0 +1,241 @@
+Region,Ort,Referenzperiode,OffsetC
+Europa,"Reykjavík",1961-1990,0
+Europa,"Reykjavík",1850-1900,-0.49
+Europa,"Reykjavík",1991-2020,0.99
+Europa,"Reykjavík",1850-2025,-0.01
+Europa,"Helsinki",1961-1990,0
+Europa,"Helsinki",1850-1900,-0.51
+Europa,"Helsinki",1991-2020,1.1
+Europa,"Helsinki",1850-2025,0.06
+Europa,"Oslo",1961-1990,0
+Europa,"Oslo",1850-1900,-0.34
+Europa,"Oslo",1991-2020,1.43
+Europa,"Oslo",1850-2025,0.19
+Europa,"Stockholm",1961-1990,0
+Europa,"Stockholm",1850-1900,-0.45
+Europa,"Stockholm",1991-2020,1.2
+Europa,"Stockholm",1850-2025,0.05
+Europa,"Sankt Petersburg",1961-1990,0
+Europa,"Sankt Petersburg",1850-1900,-0.64
+Europa,"Sankt Petersburg",1991-2020,1.01
+Europa,"Sankt Petersburg",1850-2025,-0.06
+Europa,"Riga",1961-1990,0
+Europa,"Riga",1850-1900,-0.53
+Europa,"Riga",1991-2020,1.29
+Europa,"Riga",1850-2025,0.05
+Europa,"Kopenhagen",1961-1990,0
+Europa,"Kopenhagen",1850-1900,-0.59
+Europa,"Kopenhagen",1991-2020,0.87
+Europa,"Kopenhagen",1850-2025,-0.09
+Europa,"Moskau",1961-1990,0
+Europa,"Moskau",1850-1900,-0.79
+Europa,"Moskau",1991-2020,1.11
+Europa,"Moskau",1850-2025,-0.1
+Europa,"Dublin",1961-1990,0
+Europa,"Dublin",1850-1900,-0.31
+Europa,"Dublin",1991-2020,0.89
+Europa,"Dublin",1850-2025,0.05
+Europa,"Hamburg",1961-1990,0
+Europa,"Hamburg",1850-1900,-0.38
+Europa,"Hamburg",1991-2020,1.07
+Europa,"Hamburg",1850-2025,0.09
+Europa,"Amsterdam",1961-1990,0
+Europa,"Amsterdam",1850-1900,-0.4
+Europa,"Amsterdam",1991-2020,1.1
+Europa,"Amsterdam",1850-2025,0.03
+Europa,"Berlin",1961-1990,0
+Europa,"Berlin",1850-1900,-0.72
+Europa,"Berlin",1991-2020,0.99
+Europa,"Berlin",1850-2025,-0.11
+Europa,"Warschau",1961-1990,0
+Europa,"Warschau",1850-1900,-0.51
+Europa,"Warschau",1991-2020,1.03
+Europa,"Warschau",1850-2025,-0.02
+Europa,"London",1961-1990,0
+Europa,"London",1850-1900,-0.46
+Europa,"London",1991-2020,0.83
+Europa,"London",1850-2025,-0.03
+Europa,"Köln",1961-1990,0
+Europa,"Köln",1850-1900,-0.48
+Europa,"Köln",1991-2020,1.02
+Europa,"Köln",1850-2025,0.04
+Europa,"Prag",1961-1990,0
+Europa,"Prag",1850-1900,-0.56
+Europa,"Prag",1991-2020,1.01
+Europa,"Prag",1850-2025,-0.03
+Europa,"Paris",1961-1990,0
+Europa,"Paris",1850-1900,-0.49
+Europa,"Paris",1991-2020,0.99
+Europa,"Paris",1850-2025,0
+Europa,"Wien",1961-1990,0
+Europa,"Wien",1850-1900,-0.49
+Europa,"Wien",1991-2020,1.13
+Europa,"Wien",1850-2025,0.05
+Europa,"München",1961-1990,0
+Europa,"München",1850-1900,-0.61
+Europa,"München",1991-2020,1.08
+Europa,"München",1850-2025,0
+Europa,"Budapest",1961-1990,0
+Europa,"Budapest",1850-1900,-0.59
+Europa,"Budapest",1991-2020,1.1
+Europa,"Budapest",1850-2025,0.02
+Europa,"Zürich",1961-1990,0
+Europa,"Zürich",1850-1900,-0.65
+Europa,"Zürich",1991-2020,1.03
+Europa,"Zürich",1850-2025,-0.05
+Europa,"Mailand",1961-1990,0
+Europa,"Mailand",1850-1900,-0.58
+Europa,"Mailand",1991-2020,1.19
+Europa,"Mailand",1850-2025,0.02
+Europa,"Bukarest",1961-1990,0
+Europa,"Bukarest",1850-1900,-0.62
+Europa,"Bukarest",1991-2020,0.93
+Europa,"Bukarest",1850-2025,-0.05
+Europa,"Marseille",1961-1990,0
+Europa,"Marseille",1850-1900,-0.68
+Europa,"Marseille",1991-2020,0.93
+Europa,"Marseille",1850-2025,-0.09
+Europa,"Rom",1961-1990,0
+Europa,"Rom",1850-1900,-0.45
+Europa,"Rom",1991-2020,1.06
+Europa,"Rom",1850-2025,0.04
+Europa,"Barcelona",1961-1990,0
+Europa,"Barcelona",1850-1900,-0.46
+Europa,"Barcelona",1991-2020,1.02
+Europa,"Barcelona",1850-2025,0.01
+Europa,"Istanbul",1961-1990,0
+Europa,"Istanbul",1850-1900,-0.7
+Europa,"Istanbul",1991-2020,0.84
+Europa,"Istanbul",1850-2025,-0.14
+Europa,"Madrid",1961-1990,0
+Europa,"Madrid",1850-1900,-0.62
+Europa,"Madrid",1991-2020,1.01
+Europa,"Madrid",1850-2025,-0.05
+Europa,"Athen",1961-1990,0
+Europa,"Athen",1850-1900,-0.43
+Europa,"Athen",1991-2020,1.11
+Europa,"Athen",1850-2025,0.06
+Europa,"Lissabon",1961-1990,0
+Europa,"Lissabon",1850-1900,-0.49
+Europa,"Lissabon",1991-2020,0.87
+Europa,"Lissabon",1850-2025,-0.04
+Welt,"Anchorage",1961-1990,0
+Welt,"Anchorage",1850-1900,-0.71
+Welt,"Anchorage",1991-2020,1.21
+Welt,"Anchorage",1850-2025,-0.09
+Welt,"Moskau",1961-1990,0
+Welt,"Moskau",1850-1900,-0.86
+Welt,"Moskau",1991-2020,1.05
+Welt,"Moskau",1850-2025,-0.13
+Welt,"Berlin",1961-1990,0
+Welt,"Berlin",1850-1900,-0.79
+Welt,"Berlin",1991-2020,0.94
+Welt,"Berlin",1850-2025,-0.14
+Welt,"London",1961-1990,0
+Welt,"London",1850-1900,-0.54
+Welt,"London",1991-2020,0.77
+Welt,"London",1850-2025,-0.05
+Welt,"Toronto",1961-1990,0
+Welt,"Toronto",1850-1900,-0.69
+Welt,"Toronto",1991-2020,0.57
+Welt,"Toronto",1850-2025,-0.33
+Welt,"New York",1961-1990,0
+Welt,"New York",1850-1900,-0.52
+Welt,"New York",1991-2020,0.66
+Welt,"New York",1850-2025,-0.14
+Welt,"Peking",1961-1990,0
+Welt,"Peking",1850-1900,-0.98
+Welt,"Peking",1991-2020,0.64
+Welt,"Peking",1850-2025,-0.36
+Welt,"Seoul",1961-1990,0
+Welt,"Seoul",1850-1900,-0.87
+Welt,"Seoul",1991-2020,0.7
+Welt,"Seoul",1850-2025,-0.24
+Welt,"Tokio",1961-1990,0
+Welt,"Tokio",1850-1900,-0.56
+Welt,"Tokio",1991-2020,0.97
+Welt,"Tokio",1850-2025,-0.07
+Welt,"Los Angeles",1961-1990,0
+Welt,"Los Angeles",1850-1900,-0.58
+Welt,"Los Angeles",1991-2020,0.9
+Welt,"Los Angeles",1850-2025,-0.06
+Welt,"Schanghai",1961-1990,0
+Welt,"Schanghai",1850-1900,-0.03
+Welt,"Schanghai",1991-2020,1
+Welt,"Schanghai",1850-2025,0.23
+Welt,"Kairo",1961-1990,0
+Welt,"Kairo",1850-1900,-0.42
+Welt,"Kairo",1991-2020,0.88
+Welt,"Kairo",1850-2025,-0.05
+Welt,"Neu-Delhi",1961-1990,0
+Welt,"Neu-Delhi",1850-1900,-0.21
+Welt,"Neu-Delhi",1991-2020,0.44
+Welt,"Neu-Delhi",1850-2025,-0.03
+Welt,"Riad",1961-1990,0
+Welt,"Riad",1850-1900,-0.65
+Welt,"Riad",1991-2020,0.8
+Welt,"Riad",1850-2025,-0.12
+Welt,"Mexiko-Stadt",1961-1990,0
+Welt,"Mexiko-Stadt",1850-1900,-0.48
+Welt,"Mexiko-Stadt",1991-2020,0.76
+Welt,"Mexiko-Stadt",1850-2025,-0.11
+Welt,"Mumbai",1961-1990,0
+Welt,"Mumbai",1850-1900,-0.22
+Welt,"Mumbai",1991-2020,0.85
+Welt,"Mumbai",1850-2025,0.09
+Welt,"Bangkok",1961-1990,0
+Welt,"Bangkok",1850-1900,-0.43
+Welt,"Bangkok",1991-2020,0.58
+Welt,"Bangkok",1850-2025,-0.09
+Welt,"Lagos",1961-1990,0
+Welt,"Lagos",1850-1900,-0.31
+Welt,"Lagos",1991-2020,0.45
+Welt,"Lagos",1850-2025,-0.07
+Welt,"Singapur",1961-1990,0
+Welt,"Singapur",1850-1900,-0.25
+Welt,"Singapur",1991-2020,0.6
+Welt,"Singapur",1850-2025,0.01
+Welt,"Nairobi",1961-1990,0
+Welt,"Nairobi",1850-1900,-0.4
+Welt,"Nairobi",1991-2020,0.4
+Welt,"Nairobi",1850-2025,-0.09
+Welt,"Jakarta",1961-1990,0
+Welt,"Jakarta",1850-1900,-0.48
+Welt,"Jakarta",1991-2020,0.48
+Welt,"Jakarta",1850-2025,-0.14
+Welt,"Lima",1961-1990,0
+Welt,"Lima",1850-1900,-0.22
+Welt,"Lima",1991-2020,0.51
+Welt,"Lima",1850-2025,0
+Welt,"São Paulo",1961-1990,0
+Welt,"São Paulo",1850-1900,-0.42
+Welt,"São Paulo",1991-2020,0.69
+Welt,"São Paulo",1850-2025,-0.07
+Welt,"Johannesburg",1961-1990,0
+Welt,"Johannesburg",1850-1900,-0.11
+Welt,"Johannesburg",1991-2020,0.69
+Welt,"Johannesburg",1850-2025,0.09
+Welt,"Santiago de Chile",1961-1990,0
+Welt,"Santiago de Chile",1850-1900,-0.48
+Welt,"Santiago de Chile",1991-2020,0.43
+Welt,"Santiago de Chile",1850-2025,-0.17
+Welt,"Sydney",1961-1990,0
+Welt,"Sydney",1850-1900,-0.43
+Welt,"Sydney",1991-2020,0.38
+Welt,"Sydney",1850-2025,-0.18
+Welt,"Kapstadt",1961-1990,0
+Welt,"Kapstadt",1850-1900,-0.35
+Welt,"Kapstadt",1991-2020,0.62
+Welt,"Kapstadt",1850-2025,-0.07
+Welt,"Buenos Aires",1961-1990,0
+Welt,"Buenos Aires",1850-1900,-0.14
+Welt,"Buenos Aires",1991-2020,0.3
+Welt,"Buenos Aires",1850-2025,-0.07
+Welt,"Auckland",1961-1990,0
+Welt,"Auckland",1850-1900,-0.31
+Welt,"Auckland",1991-2020,0.43
+Welt,"Auckland",1850-2025,-0.05
+Welt,"Melbourne",1961-1990,0
+Welt,"Melbourne",1850-1900,-0.29
+Welt,"Melbourne",1991-2020,0.47
+Welt,"Melbourne",1850-2025,0
