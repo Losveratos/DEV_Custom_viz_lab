@@ -40,6 +40,68 @@
     }
 }
 
+.ws3d-panel {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    display: none;
+    width: 264px;
+    padding: 8px 8px 7px;
+    border: 1px solid;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    z-index: 6;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    pointer-events: none;
+
+    .ws3d-p-name {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ws3d-p-stripes {
+        display: block;
+        width: 100%;
+        height: 30px;
+        border-radius: 3px;
+        margin-bottom: 6px;
+    }
+    .ws3d-p-value {
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 3px;
+    }
+    .ws3d-p-meta {
+        font-size: 10.5px;
+        opacity: 0.72;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.35;
+    }
+}
+
+.ws3d-zoom {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: rgba(17, 22, 28, 0.72);
+    color: #e6eaee;
+    font: 11px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    z-index: 6;
+}
+
 .ws3d-legend {
     position: absolute;
     right: 12px;

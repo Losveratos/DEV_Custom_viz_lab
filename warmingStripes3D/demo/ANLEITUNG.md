@@ -145,10 +145,17 @@ verlustfrei und bleibt auch bei eigenen Aggregationen sinnvoll.
 - **Slicer `Ort`** (Mehrfachauswahl): Stationen/Städte ein-/ausblenden.
 - **Slicer `Jahr`** (Bereich): Zeitfenster einschränken — Achsen, Kamera und
   Raster passen sich an.
-- Interaktion im Visual: **Ziehen** = drehen, **Rad** = zoomen,
-  **Umschalt+Ziehen** = verschieben, **Klick** auf einen Datenpunkt =
-  Cross-Filter (Ort×Jahr) auf andere Visuals, **Rechtsklick** = Kontextmenü
-  (Drillthrough usw.), **Hover** = Tooltip mit Ort/Jahr/Abweichung.
+- Interaktion im Visual: **Ziehen** = drehen, **Rad** = in das Feld
+  hineinfahren (zieht zum Punkt unter dem Zeiger; Zoom-Anzeige unten links,
+  Perspektiven-Klick setzt zurück), **Umschalt+Ziehen** = verschieben,
+  **Klick** auf einen Datenpunkt = Cross-Filter (Ort×Jahr) auf andere Visuals
+  und pinnt das Auslesefeld, **Klick ins Leere** = löst Pin und Selektion,
+  **Rechtsklick** = Kontextmenü (Drillthrough usw.), **Hover** = Tooltip und
+  Auslesefeld.
+- **Auslesefeld** (rechts oben, abschaltbar unter *Darstellung*): zeigt beim
+  Überfahren die Station mit ihren klassischen Warming Stripes über alle
+  Jahre (Marker am aktiven Jahr), Wert und Rang des Jahres sowie Zeitraum,
+  Mittel der letzten 5 Jahre und das wärmste Jahr der Reihe.
 - Bedienleiste links oben im Visual: Darstellungsform, Perspektive,
   Aufbau-Animation ▸ (Dauer im Formatbereich unter *Animation*).
 

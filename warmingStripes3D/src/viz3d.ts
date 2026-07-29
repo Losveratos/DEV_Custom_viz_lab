@@ -95,7 +95,9 @@ export interface Viz {
     render(): void;
     onHover(f: (h: VizHover | null) => void): void;
     onPick(f: (h: VizHover) => void): void;
+    onPickMiss(f: () => void): void;
     onContext(f: (h: VizHover | null, x: number, y: number) => void): void;
+    onZoom(f: (percent: number) => void): void;
     setHighlight(ci: number | null): void;
     resize(): void;
     readonly state: VizState;
@@ -505,14 +507,14 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         labelStore.city.forEach(o => put(o, cityX, 0.4, zOf(o.k), hideCity));
         labelStore.year.forEach(o => put(o, xOf(o.i), 0.3, zNear, hideYear));
         labelStore.tick.forEach(o => put(o, tickX, yOf(o.v), tickZ, false));
-        const cl = labelStore.city;
-        if (cl.length > 1) {
-            /* Ausdünnen bis die Labels sich nicht mehr überlappen — der Faktor
-               muss mit der Ortszahl mitwachsen, ein fester Deckel lässt bei
-               vielen Stationen alles ineinanderlaufen. */
-            const gap = Math.abs(cl[cl.length - 1].sy - cl[0].sy) / (cl.length - 1);
-            const every = gap > 0 ? Math.max(1, Math.ceil(13 / gap)) : cl.length;
-            cl.forEach((o, k) => { if (every > 1 && k % every !== 0) o.hidden = true; });
+        /* Ausdünnen per Mindestabstand auf dem Bildschirm statt festem Raster:
+           beim Hineinfahren spreizen sich nahe Labels, ferne stauchen sich —
+           gierig von oben nach unten behalten, was 13px Luft hat. */
+        const cl = labelStore.city.filter((o: any) => !o.hidden).sort((a: any, b: any) => a.sy - b.sy);
+        let lastKept = -1e9;
+        for (const o of cl) {
+            if (o.sy - lastKept < 13) o.hidden = true;
+            else lastKept = o.sy;
         }
         Object.values(labelStore).forEach(list => list.forEach((o: any) => { o.el.style.opacity = o.hidden ? "0" : ""; }));
     }
@@ -520,7 +522,7 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     /* ---------- Kamera ---------- */
     const cam = { theta: PRESETS.iso.theta, phi: PRESETS.iso.phi, dist: 140, target: new THREE.Vector3() };
     const goal = { theta: cam.theta, phi: cam.phi, dist: cam.dist, target: new THREE.Vector3() };
-    let tweening = false, presetName = "iso", zoomMul = 1;
+    let tweening = false, presetName = "iso", userZoom = false;
 
     function yRange(): [number, number] {
         if (state.form === "stripes") return [0, PLATE_H * state.vScale];
@@ -555,7 +557,7 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
             d = Math.max(d, along + Math.abs(p.dot(right)) / tanH,
                             along + Math.abs(p.dot(camUp)) / tanV);
         }
-        return Math.max(24, d * 1.12 * (zoom || 1) * zoomMul);
+        return Math.max(24, d * 1.12 * (zoom || 1));
     }
     function centreTarget(v: THREE.Vector3) {
         const [yLo, yHi] = yRange();
@@ -587,16 +589,24 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     function setPreset(name: string) {
         presetName = PRESETS[name] ? name : "iso";
         const p = PRESETS[presetName];
-        zoomMul = 1;
+        userZoom = false;
         goal.theta = p.theta; goal.phi = p.phi;
         centreTarget(goal.target);
         goal.dist = fitDist(p.theta, p.phi, p.zoom);
         tweening = true;
+        emitZoom();
     }
+    /* Nach Struktur-/Größenänderungen neu einpassen — aber eine manuell
+       gefahrene Kameraposition nicht zurückspringen lassen. */
     function refit() {
+        if (userZoom) return;
         const p = PRESETS[presetName];
         goal.dist = fitDist(goal.theta, goal.phi, p.zoom);
         if (!tweening) cam.dist = goal.dist;
+    }
+    function emitZoom() {
+        const base = fitDist(goal.theta, goal.phi, PRESETS[presetName].zoom);
+        cbs.zoom.forEach(f => f(Math.round((base / goal.dist) * 100)));
     }
 
     /* ---------- Interaktion ---------- */
@@ -627,12 +637,33 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         const click = drag && !drag.pan && Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) < 6;
         drag = null; canvas.style.cursor = "grab";
         try { canvas.releasePointerCapture(e.pointerId); } catch (_) { /* schon gelöst */ }
-        if (click) { pick(e); if (hover) cbs.pick.forEach(f => f(hover)); }
+        if (click) {
+            pick(e);
+            if (hover) cbs.pick.forEach(f => f(hover));
+            else cbs.pickMiss.forEach(f => f());
+        }
     };
+    /* Echter Dolly statt gedeckeltem Fit-Zoom: das Rad fährt die Kamera bis
+       in das Feld hinein und beim Hineinfahren zieht das Ziel sanft zum
+       Punkt unter dem Zeiger — so lässt sich eine einzelne Station
+       „anfliegen". Ein Preset-Klick setzt alles zurück. */
     const onWheel = (e: WheelEvent) => {
         e.preventDefault(); tweening = false;
-        zoomMul = Math.max(0.25, Math.min(3.2, zoomMul * (1 + Math.sign(e.deltaY) * 0.09)));
-        goal.dist = cam.dist = fitDist(cam.theta, cam.phi, PRESETS[presetName].zoom);
+        userZoom = true;
+        const zoomIn = e.deltaY < 0;
+        const f = zoomIn ? 1 / 1.12 : 1.12;
+        const base = fitDist(cam.theta, cam.phi, PRESETS[presetName].zoom);
+        const d = Math.max(CD * 1.5, Math.min(base * 4, cam.dist * f));
+        if (zoomIn) {
+            pick(e);
+            if (hover) {
+                tmpP.set(xOf(hover.i), yOf(hover.value) / 2, zOf(hover.k));
+                cam.target.lerp(tmpP, 0.22);
+                goal.target.copy(cam.target);
+            }
+        }
+        cam.dist = goal.dist = d;
+        emitZoom();
     };
     const onContextMenu = (e: MouseEvent) => {
         e.preventDefault();
@@ -650,8 +681,13 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     const ray = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
     let hover: VizHover | null = null;
-    const cbs: { hover: ((h: VizHover | null) => void)[]; pick: ((h: VizHover) => void)[]; context: ((h: VizHover | null, x: number, y: number) => void)[] } =
-        { hover: [], pick: [], context: [] };
+    const cbs: {
+        hover: ((h: VizHover | null) => void)[];
+        pick: ((h: VizHover) => void)[];
+        pickMiss: (() => void)[];
+        context: ((h: VizHover | null, x: number, y: number) => void)[];
+        zoom: ((percent: number) => void)[];
+    } = { hover: [], pick: [], pickMiss: [], context: [], zoom: [] };
     function emitHover(h: VizHover | null) {
         const key = h ? h.k + ":" + h.i : null, prev = hover ? hover.k + ":" + hover.i : null;
         if (key === prev) return;
@@ -776,7 +812,9 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         render: renderNow,
         onHover(f) { cbs.hover.push(f); },
         onPick(f) { cbs.pick.push(f); },
+        onPickMiss(f) { cbs.pickMiss.push(f); },
         onContext(f) { cbs.context.push(f); },
+        onZoom(f) { cbs.zoom.push(f); },
         setHighlight(ci) { highlightCi = ci; applyHighlight(); renderNow(); },
         resize,
         get state() { return state; },

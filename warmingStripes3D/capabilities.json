@@ -65,6 +65,9 @@
                 },
                 "legend": {
                     "type": { "bool": true }
+                },
+                "readout": {
+                    "type": { "bool": true }
                 }
             }
         },

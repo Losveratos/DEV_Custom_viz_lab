@@ -74,11 +74,17 @@ class AnsichtCardSettings extends FormattingSettingsCard {
         value: true
     });
 
+    readout = new formattingSettings.ToggleSwitch({
+        name: "readout",
+        displayName: "Auslesefeld (Hover-Details)",
+        value: true
+    });
+
     name: string = "ansicht";
     displayName: string = "Darstellung";
     slices: Array<FormattingSettingsSlice> = [
         this.form, this.scheme, this.theme, this.vScale,
-        this.grid, this.labels, this.toolbar, this.legend
+        this.grid, this.labels, this.toolbar, this.legend, this.readout
     ];
 }
 

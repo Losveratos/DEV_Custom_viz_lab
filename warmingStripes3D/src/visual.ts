@@ -56,6 +56,11 @@ export class Visual implements IVisual {
     private playRaf = 0;
     private playing = false;
     private playBtn: HTMLButtonElement | null = null;
+    private panel: HTMLElement;
+    private zoomChip: HTMLElement;
+    private zoomChipTimer = 0;
+    private pinned: { ci: number; i: number } | null = null;
+    private lastOffsets: number[] = [];
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -88,6 +93,14 @@ export class Visual implements IVisual {
         this.legendCanvas = document.createElement("canvas");
         this.legendCanvas.width = 180; this.legendCanvas.height = 10;
         this.root.appendChild(this.legend);
+
+        this.panel = document.createElement("div");
+        this.panel.className = "ws3d-panel";
+        this.root.appendChild(this.panel);
+
+        this.zoomChip = document.createElement("div");
+        this.zoomChip.className = "ws3d-zoom";
+        this.root.appendChild(this.zoomChip);
     }
 
     /* ---------- Datenaufbereitung ---------- */
@@ -263,10 +276,12 @@ export class Visual implements IVisual {
                 dim: this.dimFn(),
             };
 
+            this.lastOffsets = offsets;
             if (structural) {
                 this.stopPlay();
                 this.disposeViz();
                 this.selectedKeys.clear();
+                this.pinned = null;
                 state.dim = this.dimFn();
                 this.viz = createViz(this.stage, {
                     years: parsed.years,
@@ -274,7 +289,9 @@ export class Visual implements IVisual {
                 }, Object.assign({ reveal: 1, focus: null }, state));
                 this.viz.onHover(h => this.onHover(h));
                 this.viz.onPick(h => this.onPick(h));
+                this.viz.onPickMiss(() => this.onPickMiss());
                 this.viz.onContext((h, x, y) => this.onContext(h, x, y));
+                this.viz.onZoom(p => this.showZoom(p));
                 this.viz.setPreset(String(s.perspektiveCard.preset.value.value));
             } else {
                 this.viz.setState(state);
@@ -283,6 +300,7 @@ export class Visual implements IVisual {
 
             this.renderToolbar();
             this.renderLegend();
+            this.renderPanel(null);
             this.root.style.background = state.theme === "dark" ? "#11161c" : "#f2f2f3";
 
             this.events.renderingFinished(options);
@@ -302,17 +320,17 @@ export class Visual implements IVisual {
     /* ---------- Interaktion ---------- */
 
     private onHover(h: VizHover | null) {
+        this.renderPanel(h);
         if (!h) {
             this.host.tooltipService.hide({ immediately: false, isTouchEvent: false });
             return;
         }
-        const val = h.value;
         const fmt = (v: number) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
         this.host.tooltipService.show({
             dataItems: [
                 { displayName: "Ort", value: h.city.n },
                 { displayName: "Jahr", value: String(h.year) },
-                { displayName: "Abweichung", value: fmt(val) + " °C" }
+                { displayName: "Abweichung", value: fmt(h.value) + " °C" }
             ],
             identities: [this.selectionIdFor(h.ci, h.i)],
             coordinates: [h.clientX, h.clientY],
@@ -324,16 +342,33 @@ export class Visual implements IVisual {
         const allow = this.host.hostCapabilities?.allowInteractions ?? true;
         if (!allow) return;
         const key = h.ci + ":" + h.i;
-        const multi = this.selectedKeys.size > 0 && !this.selectedKeys.has(key);
-        const id = this.selectionIdFor(h.ci, h.i);
         if (this.selectedKeys.has(key) && this.selectedKeys.size === 1) {
             this.selectedKeys.clear();
+            this.pinned = null;
             this.selectionManager.clear().then(() => this.pushDim());
+            this.renderPanel(h);
             return;
         }
         this.selectedKeys = new Set([key]);
-        void multi;
-        this.selectionManager.select(id, false).then(() => this.pushDim());
+        this.pinned = { ci: h.ci, i: h.i };
+        this.selectionManager.select(this.selectionIdFor(h.ci, h.i), false).then(() => this.pushDim());
+        this.renderPanel(h);
+    }
+
+    private onPickMiss() {
+        this.pinned = null;
+        if (this.selectedKeys.size) {
+            this.selectedKeys.clear();
+            this.selectionManager.clear().then(() => this.pushDim());
+        }
+        this.renderPanel(null);
+    }
+
+    private showZoom(percent: number) {
+        this.zoomChip.textContent = "Zoom " + percent + " %";
+        this.zoomChip.style.opacity = "1";
+        window.clearTimeout(this.zoomChipTimer);
+        this.zoomChipTimer = window.setTimeout(() => { this.zoomChip.style.opacity = "0"; }, 1100);
     }
 
     private onContext(h: VizHover | null, x: number, y: number) {
@@ -430,6 +465,100 @@ export class Visual implements IVisual {
 
         const gPlay = mkGroup();
         this.playBtn = mkBtn(gPlay, this.playing ? "❚❚" : "▸", "Zeitlichen Aufbau abspielen", false, () => this.togglePlay());
+    }
+
+    /* Auslesefeld: Stationsname, klassische Warming Stripes der Station über
+       alle Jahre (Marker am aktiven Jahr) und die Werte dieses Jahres.
+       Hover aktualisiert transient; ein Klick pinnt Station+Jahr, bis ins
+       Leere geklickt oder die Selektion gelöst wird. */
+    private renderPanel(h: VizHover | null) {
+        const s = this.formattingSettings;
+        const p = this.parsed;
+        const show = !!s.ansichtCard.readout.value && !!p;
+        const active = h ? { ci: h.ci, i: h.i } : this.pinned;
+        this.panel.style.display = show && active ? "block" : "none";
+        if (!show || !active || !p) return;
+
+        const dark = String(s.ansichtCard.theme.value.value) === "dark";
+        const scheme = String(s.ansichtCard.scheme.value.value);
+        const ink = dark ? "#e6eaee" : "#1d1f20";
+        this.panel.style.color = ink;
+        this.panel.style.background = dark ? "rgba(17,22,28,0.88)" : "rgba(255,255,255,0.90)";
+        this.panel.style.borderColor = dark ? "rgba(230,234,238,0.22)" : "rgba(29,31,32,0.18)";
+
+        const city = p.cities[active.ci];
+        const off = this.lastOffsets[active.ci] || 0;
+        const nY = p.years.length;
+        const vAt = (i: number): number | null => {
+            const v = city.a[i];
+            return v === null || v === undefined ? null : v - off;
+        };
+        const cur = vAt(active.i);
+        const fmt = (v: number) => ((v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(2)).replace(".", ",");
+
+        while (this.panel.firstChild) this.panel.removeChild(this.panel.firstChild);
+        const line = (cls: string, text: string) => {
+            const el = document.createElement("div");
+            el.className = cls;
+            el.textContent = text;
+            this.panel.appendChild(el);
+            return el;
+        };
+
+        line("ws3d-p-name", city.name + (this.pinned && !h ? " · fixiert" : ""));
+
+        // Klassische Streifen der Station über alle Jahre, Lücken bleiben leer.
+        const cv = document.createElement("canvas");
+        cv.width = 248; cv.height = 30;
+        cv.className = "ws3d-p-stripes";
+        const ctx = cv.getContext("2d");
+        if (ctx) {
+            const w = cv.width / nY;
+            for (let i = 0; i < nY; i++) {
+                const v = vAt(i);
+                if (v === null) continue;
+                ctx.fillStyle = rampCss(scheme, v);
+                ctx.fillRect(i * w, 0, Math.ceil(w) + 0.5, cv.height);
+            }
+            ctx.fillStyle = ink;
+            ctx.fillRect(active.i * w - 0.5, 0, 2, cv.height);
+        }
+        this.panel.appendChild(cv);
+
+        // Werte des aktiven Jahres: Anomalie + Rang unter allen gültigen Jahren.
+        if (cur !== null) {
+            let rank = 1, valid = 0;
+            for (let i = 0; i < nY; i++) {
+                const v = vAt(i);
+                if (v === null) continue;
+                valid++;
+                if (v > cur) rank++;
+            }
+            line("ws3d-p-value", p.years[active.i] + " · " + fmt(cur) + " °C · Rang " + rank + " von " + valid);
+        } else {
+            line("ws3d-p-value", p.years[active.i] + " · keine Daten");
+        }
+
+        // Reihen-Statistik: Zeitraum, Mittel der letzten 5 Jahre, wärmstes Jahr.
+        let first = -1, last = -1, maxI = -1;
+        let tail = 0, tailN = 0;
+        for (let i = 0; i < nY; i++) {
+            const v = vAt(i);
+            if (v === null) continue;
+            if (first < 0) first = i;
+            last = i;
+            if (maxI < 0 || v > (vAt(maxI) as number)) maxI = i;
+        }
+        for (let i = nY - 1; i >= 0 && tailN < 5; i--) {
+            const v = vAt(i);
+            if (v !== null) { tail += v; tailN++; }
+        }
+        if (first >= 0) {
+            line("ws3d-p-meta",
+                p.years[first] + "–" + p.years[last] +
+                " · Ø letzte 5: " + fmt(tail / Math.max(1, tailN)) + " °C" +
+                " · Max: " + p.years[maxI] + " (" + fmt(vAt(maxI) as number) + " °C)");
+        }
     }
 
     private renderLegend() {
