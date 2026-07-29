@@ -68,3 +68,17 @@ Fertiges Paket: `dist/warmingStripes3D….pbiviz` → in Power BI importieren
   (60 kuratierte Städte, HadCRUT5-kalibriertes Feldmittel)
 - `tools/fetch_ghcn.py` — reproduzierbare Datenpipeline: lädt GHCN-Daily von
   S3, wählt Stationen aus, rechnet Jahresmittel und Anomalien, schreibt die CSV
+- `QUELLEN.md` — Datenquellen, Zitationen, Lizenzen, Methodik und die Grenzen
+  der Aufbereitung
+
+## Daten direkt aus GitHub laden
+
+Statt die CSV herunterzuladen, kann Power BI sie per *Daten abrufen → Web*
+direkt ziehen:
+
+```
+https://raw.githubusercontent.com/losveratos/dev_custom_viz_lab/refs/heads/claude/power-bi-custom-visual-r1r03e/warmingStripes3D/demo/waermestreifen_ghcn.csv
+```
+
+Fertiges Power-Query-Skript mit korrekter Codierung und Datentypen:
+siehe `demo/ANLEITUNG.md`, Abschnitt 2.

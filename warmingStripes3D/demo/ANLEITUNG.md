@@ -26,9 +26,59 @@ jahrgenau HadCRUT5 (Met Office), die Verteilung der einzelnen Städte um dieses
 Mittel ist jedoch **rekonstruiert** — Einzelstadtwerte sind hier keine
 Stationsdaten. Vorteil: übersichtliche, bekannte Ortsnamen für Präsentationen.
 
-### Spaltenschema (beide Dateien)
+### Variante A — direkt aus GitHub laden (kein Download nötig)
 
-*Daten abrufen → Text/CSV*, UTF-8, Komma-getrennt.
+*Daten abrufen → Web* und diese URL einfügen:
+
+```
+https://raw.githubusercontent.com/losveratos/dev_custom_viz_lab/refs/heads/claude/power-bi-custom-visual-r1r03e/warmingStripes3D/demo/waermestreifen_ghcn.csv
+```
+
+Power BI erkennt die CSV automatisch. Wichtig: In der Vorschau auf
+**„Daten transformieren"** gehen und prüfen, dass `Dateiursprung` auf
+**65001: Unicode (UTF-8)** und `Trennzeichen` auf **Komma** steht — sonst
+werden Umlaute in Ortsnamen zerlegt.
+
+Alternativ direkt als Power-Query-Skript (*Leere Abfrage → Erweiterter Editor*),
+das Codierung, Trennzeichen und Datentypen in einem Rutsch richtig setzt:
+
+```powerquery
+let
+    Quelle = Csv.Document(
+        Web.Contents("https://raw.githubusercontent.com/losveratos/dev_custom_viz_lab/refs/heads/claude/power-bi-custom-visual-r1r03e/warmingStripes3D/demo/waermestreifen_ghcn.csv"),
+        [Delimiter = ",", Columns = 8, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]
+    ),
+    Kopfzeilen = Table.PromoteHeaders(Quelle, [PromoteAllScalars = true]),
+    Typen = Table.TransformColumnTypes(Kopfzeilen, {
+        {"Region", type text}, {"Ort", type text}, {"Land", type text},
+        {"Breitengrad", type number}, {"Laengengrad", type number},
+        {"MittelC_1961_1990", type number},
+        {"Jahr", Int64.Type}, {"AnomalieC", type number}
+    }, "en-US")
+in
+    Typen
+```
+
+Das `"en-US"` am Ende ist wichtig und **kein Versehen**: Die CSV verwendet den
+Punkt als Dezimaltrennzeichen (`36.717`, `-0.37`). Mit deutscher Kultur würde
+Power BI den Punkt als Tausendertrennzeichen lesen und aus `36.717` die Zahl
+36717 machen — Koordinaten und Anomalien wären damit unbrauchbar. Beim Laden
+über die Oberfläche (Variante A ohne Skript) im Dialog *Datentyp ändern →
+Gebietsschema verwenden* entsprechend **Englisch (USA)** wählen.
+
+Für den kuratierten 60-Städte-Datensatz denselben Pfad mit
+`waermestreifen_demo.csv` am Ende verwenden.
+
+> Hinweis: Die URL zeigt auf den Entwicklungsbranch
+> `claude/power-bi-custom-visual-r1r03e`. Nach einem Merge in `main` den
+> Branchnamen in der URL entsprechend ersetzen — oder statt `refs/heads/<branch>`
+> einen festen Commit-Hash einsetzen, dann bleibt der Stand eingefroren.
+
+### Variante B — lokale Datei
+
+*Daten abrufen → Text/CSV* → Datei aus `demo/` auswählen, UTF-8, Komma-getrennt.
+
+### Spaltenschema (beide Dateien)
 
 | Spalte | Bedeutung |
 |---|---|
