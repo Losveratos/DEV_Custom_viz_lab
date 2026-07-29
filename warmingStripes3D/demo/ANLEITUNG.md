@@ -162,7 +162,11 @@ verlustfrei und bleibt auch bei eigenen Aggregationen sinnvoll.
 ## 5. Formatbereich (Auswahl)
 
 - **Darstellung**: Säulenfeld / Relief / Bänder / Streifen-Tafeln, Farbschema,
-  Hell/Dunkel, Höhenskala, Raster, Beschriftung, Bedienleiste, Legende.
+  Hell/Dunkel plus freie Hintergrundfarbe, Höhenskala, Raster, Beschriftung,
+  Bedienleiste, Legende, Auslesefeld.
+- **Größe & Skalierung** (für 4K/hochauflösende Displays): Bedienelemente,
+  Auslesefeld, Legende und Zoom-Anzeige gemeinsam auf 75–300 % skalieren;
+  3D-Beschriftung (Orte, Jahre, °C-Ticks) von 8 bis 40 Punkt.
 - **Perspektive**: Übersicht ¾, Aufsicht (klassische Streifen), Zeitachse,
   Ortsprofil, Streiflicht.
 - **Referenzperiode**: „Auf Periode re-referenzieren" verschiebt die Nulllinie

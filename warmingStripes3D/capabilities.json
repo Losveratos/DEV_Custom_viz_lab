@@ -68,6 +68,15 @@
                 },
                 "readout": {
                     "type": { "bool": true }
+                },
+                "bgColor": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -133,6 +142,20 @@
             "properties": {
                 "seconds": {
                     "type": { "numeric": true }
+                }
+            }
+        },
+        "skala": {
+            "properties": {
+                "uiScale": {
+                    "type": { "numeric": true }
+                },
+                "labelSize": {
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
                 }
             }
         }

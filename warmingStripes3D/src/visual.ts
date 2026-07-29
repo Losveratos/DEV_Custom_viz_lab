@@ -268,6 +268,8 @@ export class Visual implements IVisual {
                 form: String(s.ansichtCard.form.value.value) as "bars" | "terrain" | "curtain" | "stripes",
                 scheme: String(s.ansichtCard.scheme.value.value),
                 theme: String(s.ansichtCard.theme.value.value) as "light" | "dark",
+                bg: s.ansichtCard.bgColor.value.value || null,
+                labelScale: Math.max(0.5, (Number(s.skalaCard.labelSize.value) || 12) / 12),
                 vScale: Number(s.ansichtCard.vScale.value) || 1,
                 grid: !!s.ansichtCard.grid.value,
                 labels: String(s.ansichtCard.labels.value.value) as "min" | "axes",
@@ -301,7 +303,8 @@ export class Visual implements IVisual {
             this.renderToolbar();
             this.renderLegend();
             this.renderPanel(null);
-            this.root.style.background = state.theme === "dark" ? "#11161c" : "#f2f2f3";
+            this.applyUiScale();
+            this.root.style.background = state.bg || (state.theme === "dark" ? "#11161c" : "#f2f2f3");
 
             this.events.renderingFinished(options);
         } catch (error) {
@@ -409,6 +412,22 @@ export class Visual implements IVisual {
     }
 
     /* ---------- Overlay-UI ---------- */
+
+    /* Skalierung der Overlays (Toolbar, Auslesefeld, Legende, Zoom-Chip) für
+       hochauflösende Displays: CSS-Transform mit dem jeweils passenden
+       Ankerpunkt, damit jedes Element an seiner Ecke verankert bleibt. */
+    private applyUiScale() {
+        const f = Math.max(0.5, (Number(this.formattingSettings.skalaCard.uiScale.value) || 100) / 100);
+        const set = (el: HTMLElement, origin: string) => {
+            el.style.transform = f === 1 ? "" : "scale(" + f + ")";
+            el.style.transformOrigin = origin;
+        };
+        set(this.toolbar, "top left");
+        set(this.panel, "top right");
+        set(this.legend, "bottom right");
+        set(this.zoomChip, "bottom left");
+        set(this.hint, "center");
+    }
 
     private persist(objectName: string, propertyName: string, value: powerbi.PrimitiveValue) {
         this.host.persistProperties({

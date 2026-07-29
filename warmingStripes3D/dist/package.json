@@ -1,5 +1,5 @@
 {
-		"version": "1.3.0.0",
+		"version": "1.4.0.0",
 		"author": {"name":"DEV Custom Viz Lab","email":"michael.tenner84@gmail.com"},
 		"resources": [
 			{
@@ -8,7 +8,7 @@
 				"file": "resources/warmingStripes3D24685D57F0FB4111A8AB1ACB35766E85.pbiviz.json"
 			}
 		],
-		"visual": {"name":"warmingStripes3D","displayName":"Wärmestreifen 3D","guid":"warmingStripes3D24685D57F0FB4111A8AB1ACB35766E85","visualClassName":"Visual","version":"1.3.0.0","description":"3D-Wärmestreifen: X = Zeit, Z = Ort, Y = Temperaturabweichung. Vier Darstellungsformen (Säulenfeld, Relief, Bänder, klassische Streifen-Tafeln), kuratierte Kameraperspektiven, Orbit-Steuerung, Aufbau-Animation, dynamische Referenzperiode, Glättung und Sortierung. Tooltips und Cross-Filtering inklusive.","supportUrl":"https://github.com/losveratos/dev_custom_viz_lab/issues","gitHubUrl":"https://github.com/losveratos/dev_custom_viz_lab"},
+		"visual": {"name":"warmingStripes3D","displayName":"Wärmestreifen 3D","guid":"warmingStripes3D24685D57F0FB4111A8AB1ACB35766E85","visualClassName":"Visual","version":"1.4.0.0","description":"3D-Wärmestreifen: X = Zeit, Z = Ort, Y = Temperaturabweichung. Vier Darstellungsformen (Säulenfeld, Relief, Bänder, klassische Streifen-Tafeln), kuratierte Kameraperspektiven, Orbit-Steuerung, Aufbau-Animation, dynamische Referenzperiode, Glättung und Sortierung. Tooltips und Cross-Filtering inklusive.","supportUrl":"https://github.com/losveratos/dev_custom_viz_lab/issues","gitHubUrl":"https://github.com/losveratos/dev_custom_viz_lab"},
 		"metadata": {
 			"pbivizjson": {
 				"resourceId": "rId0"

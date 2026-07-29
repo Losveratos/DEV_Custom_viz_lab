@@ -80,10 +80,16 @@ class AnsichtCardSettings extends FormattingSettingsCard {
         value: true
     });
 
+    bgColor = new formattingSettings.ColorPicker({
+        name: "bgColor",
+        displayName: "Hintergrundfarbe (leer = Thema)",
+        value: { value: "" }
+    });
+
     name: string = "ansicht";
     displayName: string = "Darstellung";
     slices: Array<FormattingSettingsSlice> = [
-        this.form, this.scheme, this.theme, this.vScale,
+        this.form, this.scheme, this.theme, this.bgColor, this.vScale,
         this.grid, this.labels, this.toolbar, this.legend, this.readout
     ];
 }
@@ -182,12 +188,39 @@ class AnimationCardSettings extends FormattingSettingsCard {
     slices: Array<FormattingSettingsSlice> = [this.seconds];
 }
 
+class SkalaCardSettings extends FormattingSettingsCard {
+    uiScale = new formattingSettings.NumUpDown({
+        name: "uiScale",
+        displayName: "Bedienelemente & Auslesefeld (%)",
+        value: 100,
+        options: {
+            minValue: { type: 0, value: 75 },
+            maxValue: { type: 1, value: 300 }
+        }
+    });
+
+    labelSize = new formattingSettings.NumUpDown({
+        name: "labelSize",
+        displayName: "3D-Beschriftung (Punkt)",
+        value: 12,
+        options: {
+            minValue: { type: 0, value: 8 },
+            maxValue: { type: 1, value: 40 }
+        }
+    });
+
+    name: string = "skala";
+    displayName: string = "Größe & Skalierung";
+    slices: Array<FormattingSettingsSlice> = [this.uiScale, this.labelSize];
+}
+
 export class VisualFormattingSettingsModel extends FormattingSettingsModel {
     ansichtCard = new AnsichtCardSettings();
+    skalaCard = new SkalaCardSettings();
     perspektiveCard = new PerspektiveCardSettings();
     referenzCard = new ReferenzCardSettings();
     analyseCard = new AnalyseCardSettings();
     animationCard = new AnimationCardSettings();
 
-    cards = [this.ansichtCard, this.perspektiveCard, this.referenzCard, this.analyseCard, this.animationCard];
+    cards = [this.ansichtCard, this.skalaCard, this.perspektiveCard, this.referenzCard, this.analyseCard, this.animationCard];
 }

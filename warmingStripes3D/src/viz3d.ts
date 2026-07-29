@@ -31,6 +31,10 @@ export interface VizState {
     focus: number | null;
     labels: "min" | "axes";
     theme: "light" | "dark";
+    /* Freie Hintergrundfarbe; null = Theme-Standard. */
+    bg: string | null;
+    /* Skalierung der 3D-Beschriftung (1 = 12px-Basis), für hochauflösende Displays. */
+    labelScale: number;
     offsets: number[];
     dim: ((ci: number, i: number) => boolean) | null;
 }
@@ -111,6 +115,7 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     const state: VizState = Object.assign({
         form: "bars", scheme: "stripes", vScale: 1, smooth: 0,
         order: [], grid: true, reveal: 1, focus: null, labels: "axes", theme: "light",
+        bg: null, labelScale: 1,
         offsets: [], dim: null,
     } as VizState, initial || {});
 
@@ -196,9 +201,12 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     const matLineF = new THREE.LineBasicMaterial({ color: new THREE.Color().setStyle("#1d1f20"), transparent: true, opacity: 0.42 });
 
     const theme = () => THEMES[state.theme] || THEMES.light;
+    /* Hintergrund: frei gewählte Farbe schlägt den Theme-Standard. Die Tinte
+       (Raster, Beschriftung) folgt weiter dem gewählten Hell/Dunkel-Theme. */
+    const bgColor = () => state.bg || theme().bg;
     function applyTheme() {
         const T = theme();
-        (scene.background as THREE.Color).setStyle(T.bg); scene.fog.color.setStyle(T.bg);
+        (scene.background as THREE.Color).setStyle(bgColor()); scene.fog.color.setStyle(bgColor());
         matLine.color.setStyle(T.ink); matLineF.color.setStyle(T.ink);
         if (frontEdge) (frontEdge.material as THREE.MeshBasicMaterial).color.setStyle(T.accent);
         if (focusMark) (focusMark.material as THREE.MeshBasicMaterial).color.setStyle(T.ink);
@@ -208,7 +216,8 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     /* Cross-Filter-Dimmung: nicht selektierte Werte Richtung Hintergrund mischen. */
     function shade(ci: number, i: number, c: RGB): RGB {
         if (!state.dim || !state.dim(ci, i)) return c;
-        const bg = hexRGB(theme().bg), t = 0.78;
+        const raw_bg = bgColor();
+        const bg = hexRGB(raw_bg.startsWith("#") && raw_bg.length >= 7 ? raw_bg : theme().bg), t = 0.78;
         return [c[0] + (bg[0] - c[0]) * t, c[1] + (bg[1] - c[1]) * t, c[2] + (bg[2] - c[2]) * t];
     }
 
@@ -454,9 +463,10 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
             fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif', color: theme().ink,
             transform: "translate(-50%,-50%)", willChange: "transform,opacity",
         });
-        if (kind === "city") { Object.assign(el.style, { fontSize: "12px", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600" }); el.style.textAlign = "center"; }
-        if (kind === "year") { Object.assign(el.style, { fontSize: "12px", letterSpacing: "0.06em", opacity: "0.62", fontVariantNumeric: "tabular-nums" }); }
-        if (kind === "tick") { Object.assign(el.style, { fontSize: "11px", letterSpacing: "0.06em", opacity: "0.55", fontVariantNumeric: "tabular-nums" }); }
+        const fs = (px: number) => Math.round(px * (state.labelScale || 1)) + "px";
+        if (kind === "city") { Object.assign(el.style, { fontSize: fs(12), letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600" }); el.style.textAlign = "center"; }
+        if (kind === "year") { Object.assign(el.style, { fontSize: fs(12), letterSpacing: "0.06em", opacity: "0.62", fontVariantNumeric: "tabular-nums" }); }
+        if (kind === "tick") { Object.assign(el.style, { fontSize: fs(11), letterSpacing: "0.06em", opacity: "0.55", fontVariantNumeric: "tabular-nums" }); }
         overlay.appendChild(el); return el;
     };
     function syncLabels() {
@@ -509,12 +519,26 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         labelStore.tick.forEach(o => put(o, tickX, yOf(o.v), tickZ, false));
         /* Ausdünnen per Mindestabstand auf dem Bildschirm statt festem Raster:
            beim Hineinfahren spreizen sich nahe Labels, ferne stauchen sich —
-           gierig von oben nach unten behalten, was 13px Luft hat. */
+           gierig behalten, was genug Luft hat. Die Schwelle wächst mit der
+           eingestellten Beschriftungsgröße mit. */
+        const ls = state.labelScale || 1;
         const cl = labelStore.city.filter((o: any) => !o.hidden).sort((a: any, b: any) => a.sy - b.sy);
         let lastKept = -1e9;
         for (const o of cl) {
-            if (o.sy - lastKept < 13) o.hidden = true;
+            if (o.sy - lastKept < 13 * ls) o.hidden = true;
             else lastKept = o.sy;
+        }
+        const yl = labelStore.year.filter((o: any) => !o.hidden).sort((a: any, b: any) => a.sx - b.sx);
+        let lastX = -1e9;
+        for (const o of yl) {
+            if (o.sx - lastX < 42 * ls) o.hidden = true;
+            else lastX = o.sx;
+        }
+        const tl = labelStore.tick.filter((o: any) => !o.hidden).sort((a: any, b: any) => a.sy - b.sy);
+        let lastTy = -1e9;
+        for (const o of tl) {
+            if (o.sy - lastTy < 12 * ls) o.hidden = true;
+            else lastTy = o.sy;
         }
         Object.values(labelStore).forEach(list => list.forEach((o: any) => { o.el.style.opacity = o.hidden ? "0" : ""; }));
     }
@@ -798,11 +822,15 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
             const needsFill = ("offsets" in patch) || ("dim" in patch) ||
                 ("scheme" in patch && patch.scheme !== state.scheme) ||
                 ("smooth" in patch && patch.smooth !== state.smooth) ||
-                ("vScale" in patch && patch.vScale !== state.vScale);
+                ("vScale" in patch && patch.vScale !== state.vScale) ||
+                ("bg" in patch && patch.bg !== state.bg);   // Dimm-Mischung hängt am Hintergrund
             if ("order" in patch) order = patch.order.slice();
-            const themed = "theme" in patch && patch.theme !== state.theme;
+            const themed = ("theme" in patch && patch.theme !== state.theme) ||
+                ("bg" in patch && patch.bg !== state.bg);
+            const relabel = "labelScale" in patch && patch.labelScale !== state.labelScale;
             Object.assign(state, patch);
             if (themed) { applyTheme(); syncLabels(); }
+            else if (relabel) syncLabels();
             if (structural) rebuild(); else if (needsFill) { refill(); buildChrome(); syncLabels(); }
             applyReveal();
             if (structural || (needsFill && !("dim" in patch))) { centreTarget(goal.target); refit(); tweening = true; }
