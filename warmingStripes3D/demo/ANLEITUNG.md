@@ -156,6 +156,13 @@ verlustfrei und bleibt auch bei eigenen Aggregationen sinnvoll.
   Überfahren die Station mit ihren klassischen Warming Stripes über alle
   Jahre (Marker am aktiven Jahr), Wert und Rang des Jahres sowie Zeitraum,
   Mittel der letzten 5 Jahre und das wärmste Jahr der Reihe.
+- **Referenz-Kippschalter** in der Bedienleiste: „1961–90" ↔ „vorind." schaltet
+  die Nulllinie zwischen WMO-Standard und vorindustriell 1850–1900 um — beim
+  Umschalten auf vorindustriell kippt das gesamte Feld sichtbar ins Rote.
+- **Kiosk-Rotation** (↻ in der Bedienleiste oder Formatbereich → *Animation*):
+  nach einstellbarer Inaktivität (Standard 20 s) dreht die Kamera langsam
+  weiter (Standard: eine Umdrehung in 90 s); jede Eingabe pausiert sie —
+  gedacht für Dashboards auf Wandmonitoren.
 - Bedienleiste links oben im Visual: Darstellungsform, Perspektive,
   Aufbau-Animation ▸ (Dauer im Formatbereich unter *Animation*).
 

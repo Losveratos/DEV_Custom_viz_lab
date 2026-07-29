@@ -142,6 +142,15 @@
             "properties": {
                 "seconds": {
                     "type": { "numeric": true }
+                },
+                "kiosk": {
+                    "type": { "bool": true }
+                },
+                "kioskDelay": {
+                    "type": { "numeric": true }
+                },
+                "kioskPeriod": {
+                    "type": { "numeric": true }
                 }
             }
         },

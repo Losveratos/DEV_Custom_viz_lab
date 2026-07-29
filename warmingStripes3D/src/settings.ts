@@ -183,9 +183,35 @@ class AnimationCardSettings extends FormattingSettingsCard {
         }
     });
 
+    kiosk = new formattingSettings.ToggleSwitch({
+        name: "kiosk",
+        displayName: "Kiosk-Rotation",
+        value: false
+    });
+
+    kioskDelay = new formattingSettings.NumUpDown({
+        name: "kioskDelay",
+        displayName: "Start nach Inaktivität (Sekunden)",
+        value: 20,
+        options: {
+            minValue: { type: 0, value: 2 },
+            maxValue: { type: 1, value: 600 }
+        }
+    });
+
+    kioskPeriod = new formattingSettings.NumUpDown({
+        name: "kioskPeriod",
+        displayName: "Sekunden pro Umdrehung",
+        value: 90,
+        options: {
+            minValue: { type: 0, value: 12 },
+            maxValue: { type: 1, value: 600 }
+        }
+    });
+
     name: string = "animation";
     displayName: string = "Animation";
-    slices: Array<FormattingSettingsSlice> = [this.seconds];
+    slices: Array<FormattingSettingsSlice> = [this.seconds, this.kiosk, this.kioskDelay, this.kioskPeriod];
 }
 
 class SkalaCardSettings extends FormattingSettingsCard {

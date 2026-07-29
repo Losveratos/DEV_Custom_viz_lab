@@ -103,6 +103,10 @@ export interface Viz {
     onContext(f: (h: VizHover | null, x: number, y: number) => void): void;
     onZoom(f: (percent: number) => void): void;
     setHighlight(ci: number | null): void;
+    /* Kiosk-Rotation: nach idleMs ohne Nutzereingabe dreht die Kamera mit
+       degPerSec weiter; jede Eingabe pausiert sie wieder. */
+    setKiosk(enabled: boolean, idleMs: number, degPerSec: number): void;
+    readonly cameraState: { theta: number; phi: number; dist: number };
     resize(): void;
     readonly state: VizState;
     dispose(): void;
@@ -635,12 +639,17 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
 
     /* ---------- Interaktion ---------- */
     let drag: any = null;
+    const kiosk = { enabled: false, idleMs: 30000, degPerSec: 4 };
+    let lastUser = performance.now();
+    const touch = () => { lastUser = performance.now(); };
     const onDown = (e: PointerEvent) => {
+        touch();
         canvas.setPointerCapture(e.pointerId);
         drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, pan: e.shiftKey || e.button === 2 };
         tweening = false; canvas.style.cursor = drag.pan ? "move" : "grabbing";
     };
     const onMove = (e: PointerEvent) => {
+        touch();
         if (drag) {
             const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
             drag.x = e.clientX; drag.y = e.clientY;
@@ -673,6 +682,7 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
        „anfliegen". Ein Preset-Klick setzt alles zurück. */
     const onWheel = (e: WheelEvent) => {
         e.preventDefault(); tweening = false;
+        touch();
         userZoom = true;
         const zoomIn = e.deltaY < 0;
         const f = zoomIn ? 1 / 1.12 : 1.12;
@@ -736,11 +746,20 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
     }
 
     /* ---------- Loop ---------- */
-    let raf = 0, alive = true, frames = 0;
+    let raf = 0, alive = true, frames = 0, prevT = performance.now();
     function frame() {
         if (!alive) return;
         raf = requestAnimationFrame(frame);
         frames++;
+        const nowT = performance.now();
+        const dt = Math.min(0.1, (nowT - prevT) / 1000);
+        prevT = nowT;
+        /* Kiosk: nach Leerlauf langsam weiterdrehen — bildratenunabhängig,
+           und sofort pausieren, sobald der Nutzer eingreift. */
+        if (kiosk.enabled && !drag && !tweening && nowT - lastUser > kiosk.idleMs) {
+            cam.theta -= kiosk.degPerSec * dt * Math.PI / 180;
+            goal.theta = cam.theta;
+        }
         if (tweening) {
             const e = 0.10;
             cam.theta += (goal.theta - cam.theta) * e;
@@ -844,8 +863,15 @@ export function createViz(container: HTMLElement, data: VizData, initial: Partia
         onContext(f) { cbs.context.push(f); },
         onZoom(f) { cbs.zoom.push(f); },
         setHighlight(ci) { highlightCi = ci; applyHighlight(); renderNow(); },
+        setKiosk(enabled, idleMs, degPerSec) {
+            kiosk.enabled = enabled;
+            kiosk.idleMs = Math.max(1000, idleMs);
+            kiosk.degPerSec = Math.max(0.2, Math.min(30, degPerSec));
+            touch();
+        },
         resize,
         get state() { return state; },
+        get cameraState() { return { theta: cam.theta, phi: cam.phi, dist: cam.dist }; },
         dispose() {
             alive = false; cancelAnimationFrame(raf); ro.disconnect();
             clearData(); chrome.clear(); overlay.remove();

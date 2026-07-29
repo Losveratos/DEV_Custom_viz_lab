@@ -300,6 +300,12 @@ export class Visual implements IVisual {
                 this.viz.setPreset(String(s.perspektiveCard.preset.value.value));
             }
 
+            this.viz.setKiosk(
+                !!s.animationCard.kiosk.value,
+                (Number(s.animationCard.kioskDelay.value) || 20) * 1000,
+                360 / Math.max(12, Number(s.animationCard.kioskPeriod.value) || 90)
+            );
+
             this.renderToolbar();
             this.renderLegend();
             this.renderPanel(null);
@@ -482,8 +488,26 @@ export class Visual implements IVisual {
         presets.forEach(([v, icon, title]) =>
             mkBtn(gPreset, icon, title, curPreset === v, () => this.persist("perspektive", "preset", v)));
 
+        /* Referenz-Kippschalter: Nulllinie zwischen WMO-Standard und
+           vorindustriell umschalten — der „Alles-wird-rot"-Moment. */
+        const r = this.formattingSettings.referenzCard;
+        const isPeriode = String(r.modus.value.value) === "periode";
+        const von = Number(r.von.value), bis = Number(r.bis.value);
+        const isWMO = isPeriode && von === 1961 && bis === 1990;
+        const isPre = isPeriode && von === 1850 && bis === 1900;
+        const gRef = mkGroup();
+        mkBtn(gRef, "1961–90", "Nulllinie: Referenz 1961–1990 (WMO-Standard)", isWMO, () =>
+            this.host.persistProperties({ merge: [{ objectName: "referenz", selector: null,
+                properties: { modus: "periode", von: 1961, bis: 1990 } }] }));
+        mkBtn(gRef, "vorind.", "Nulllinie: vorindustriell 1850–1900 — zeigt die volle Erwärmung", isPre, () =>
+            this.host.persistProperties({ merge: [{ objectName: "referenz", selector: null,
+                properties: { modus: "periode", von: 1850, bis: 1900 } }] }));
+
         const gPlay = mkGroup();
         this.playBtn = mkBtn(gPlay, this.playing ? "❚❚" : "▸", "Zeitlichen Aufbau abspielen", false, () => this.togglePlay());
+        const kioskOn = !!this.formattingSettings.animationCard.kiosk.value;
+        mkBtn(gPlay, "↻", "Kiosk-Rotation: dreht nach Inaktivität langsam weiter", kioskOn, () =>
+            this.persist("animation", "kiosk", !kioskOn));
     }
 
     /* Auslesefeld: Stationsname, klassische Warming Stripes der Station über
