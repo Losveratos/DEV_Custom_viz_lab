@@ -1,0 +1,17 @@
+{
+		"version": "1.0.0.0",
+		"author": {"name":"DEV Custom Viz Lab","email":"michael.tenner84@gmail.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/labBarChart4349B071780E42179E23EE77709CBD6F.pbiviz.json"
+			}
+		],
+		"visual": {"name":"labBarChart","displayName":"Lab Bar Chart","guid":"labBarChart4349B071780E42179E23EE77709CBD6F","visualClassName":"Visual","version":"1.0.0.0","description":"Test bar chart visual: thin columns with rounded data-ends, recessive hairline grid, selective direct label on the extreme value, tooltips, cross-filtering and high-contrast support.","supportUrl":"https://github.com/losveratos/dev_custom_viz_lab/issues","gitHubUrl":"https://github.com/losveratos/dev_custom_viz_lab"},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}
