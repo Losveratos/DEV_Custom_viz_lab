@@ -167,3 +167,12 @@ Das Skript benötigt nur die Python-Standardbibliothek und rund 550 MB
 Cache-Speicher für die Rohdaten. Ein erneuter Lauf zu einem späteren Zeitpunkt
 liefert aktualisierte Jahre; die Stationsauswahl kann sich dabei leicht ändern,
 da sie vom aktuellen Inventar abhängt.
+
+---
+
+## 6. Versionsverlauf des Visuals
+
+| Version | Änderung |
+|---|---|
+| 1.0.0.0 | Erstportierung des Standalone-Artifacts: vier Darstellungsformen, fünf Kameraperspektiven, Orbit-Steuerung, Aufbau-Animation, Tooltips, Cross-Filtering, Formatbereich, dynamische Referenzperiode. |
+| 1.1.0.0 | Korrekturen für große und lückenhafte Datensätze (sichtbar geworden mit den 758 GHCN-Stationen): Nebel- und Rückebene skalieren mit der Feldgröße statt fester Werte; Kameraeinpassung löst pro Ecke statt gegen die Mittelebene; fehlende Jahre zeichnen keine Marke mehr statt eines Nullwerts, Flächenformen halten den nächsten bekannten Wert; Ausdünnung der Ortsbeschriftung skaliert mit der Ortszahl. |
