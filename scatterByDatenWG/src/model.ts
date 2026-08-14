@@ -34,6 +34,11 @@ export interface RowInput {
     colorIdx: number;
 }
 
+export interface MeasureOption {
+    key: string;
+    label: string;
+}
+
 export interface RenderInput {
     yLabel: string;
     rows: RowInput[];
@@ -41,6 +46,11 @@ export interface RenderInput {
     legend: LegendItem[];
     /** fertiger Fußzeilentext; "" = Fußzeile ausblenden */
     footer: string;
+    /** alle Kennzahlen für die In-Visual-Y-Auswahl (inkl. der aktuellen Y);
+     *  leer = Y ist fest über die Datenrolle vorgegeben */
+    measures: MeasureOption[];
+    /** key der aktuell als Y verwendeten Kennzahl (aus measures) */
+    yKey: string;
 }
 
 export type XScaleMode = "auto" | "linear" | "log";
@@ -81,6 +91,19 @@ export interface RenderOptions {
     footerFontSize: number;
     /** Legenden-Chips in der Kopfzeile anzeigen (default true) */
     showLegend?: boolean;
+
+    /** In-Visual-Header (unabhängig vom Power-BI-Titel); title "" = ausblenden */
+    header: { title: string; subtitle: string };
+    /** Bedienung der Y-Kennzahl-Auswahl; "none" = keine Auswahl anzeigen */
+    ySelector: "none" | "dropdown" | "chips";
+    onYSelect(key: string, ev: Event): void;
+
+    /** Side-Panel: Ranking nach Y (absteigend) + Suche + Detailkarte.
+     *  Hover auf Zeile = Cross-Highlight in allen Facetten (engine-intern),
+     *  Klick = onClick(row). Detailkarte: alle Kennzahlen des Landes mit
+     *  Rang und Min-Max-Verteilungsbalken. collapsed wird engine-intern
+     *  getoggelt (Pfeil-Button), initialCollapsed nur als Startwert. */
+    panel: { show: boolean; widthPx: number; showDetailCard: boolean; initialCollapsed: boolean };
 
     /** Zeilen abdunkeln (Cross-Filter/Highlight von außen); null = nichts dimmen */
     dim: ((row: number) => boolean) | null;

@@ -32,6 +32,19 @@
         }
     ],
     "objects": {
+        "kopf": {
+            "properties": {
+                "show": {
+                    "type": { "bool": true }
+                },
+                "title": {
+                    "type": { "text": true }
+                },
+                "subtitle": {
+                    "type": { "text": true }
+                }
+            }
+        },
         "darstellung": {
             "properties": {
                 "theme": {
@@ -48,11 +61,34 @@
                 "sizeEnabled": {
                     "type": { "bool": true }
                 },
+                "sizePreset": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Full HD (100 %)", "value": "fhd" },
+                            { "displayName": "HD (85 %)", "value": "hd" },
+                            { "displayName": "4K (180 %)", "value": "uhd" },
+                            { "displayName": "Benutzerdefiniert (nur Schriftskalierung)", "value": "custom" }
+                        ]
+                    }
+                },
                 "fontScale": {
                     "type": { "numeric": true }
                 },
                 "showLegend": {
                     "type": { "bool": true }
+                }
+            }
+        },
+        "datenfarben": {
+            "properties": {
+                "fill": {
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -75,6 +111,18 @@
                 },
                 "columns": {
                     "type": { "numeric": true }
+                },
+                "ySelector": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Keine Auswahl im Visual", "value": "none" },
+                            { "displayName": "Dropdown im Kopf", "value": "dropdown" },
+                            { "displayName": "Chip-Leiste", "value": "chips" }
+                        ]
+                    }
+                },
+                "yKey": {
+                    "type": { "text": true }
                 }
             }
         },
@@ -90,6 +138,22 @@
                     }
                 },
                 "showR2": {
+                    "type": { "bool": true }
+                }
+            }
+        },
+        "panel": {
+            "properties": {
+                "show": {
+                    "type": { "bool": true }
+                },
+                "width": {
+                    "type": { "numeric": true }
+                },
+                "detailCard": {
+                    "type": { "bool": true }
+                },
+                "startCollapsed": {
                     "type": { "bool": true }
                 }
             }

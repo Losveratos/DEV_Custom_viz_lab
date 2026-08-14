@@ -133,3 +133,4 @@ npm install && npx pbiviz package      # baut dist/*.pbiviz
 | Version | Änderung |
 |---|---|
 | 1.0.0.0 | Erstversion: Scatter-Small-Multiples mit einem Basis-Measure auf Y und beliebig vielen X-Measures als Facetten, Detail-/Legenden-Kategorie, optionalem Größen-Measure, OLS-Regression (gesamt oder je Farbgruppe) mit R², Auto-Log-X-Skala, Sortierung nach Korrelationsstärke, Quellen-Fußzeile mit Datenrollen-Vorrang. |
+| 1.1.0.0 | In-Visual-Kopfzeile mit Titel/Untertitel; Größen-Presets für Full HD, HD und 4K (plus benutzerdefinierte Feinjustierung der Schriftskalierung); Y-Kennzahl-Auswahl direkt im Visual als Dropdown im Kopf oder als Chip-Leiste (statt Feldparameter — alle Kennzahlen kommen in den X-Bucket, die aktive Y-Kennzahl wird persistiert); neues Side-Panel mit Ranking, Suche, Hover-Detailkarte inklusive Rang und Min-Max-Verteilungsbalken, ein-/ausklappbar; Datenfarben je Legendenwert individuell einstellbar inklusive bedingter Formatierung. |

@@ -1,7 +1,7 @@
 "use strict";
 
 import powerbi from "powerbi-visuals-api";
-import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
+import { FormattingSettingsService, formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
 
 import DataView = powerbi.DataView;
@@ -17,7 +17,7 @@ import DataViewValueColumn = powerbi.DataViewValueColumn;
 
 import { VisualFormattingSettingsModel } from "./settings";
 import {
-    RenderInput, RenderOptions, RowInput, FacetInput, LegendItem,
+    RenderInput, RenderOptions, RowInput, FacetInput, LegendItem, MeasureOption,
     DEFAULT_PALETTE, LIGHT_TOKENS, DARK_TOKENS, XScaleMode, RegressionMode
 } from "./model";
 import { renderScatterMultiples } from "./render";
@@ -82,15 +82,33 @@ export class Visual implements IVisual {
         let yCol: DataViewValueColumn | null = null;
         let sizeCol: DataViewValueColumn | null = null;
         let sourceCol: DataViewValueColumn | null = null;
-        const facetCols: DataViewValueColumn[] = [];
+        const xCols: DataViewValueColumn[] = [];
         for (const col of cat.values) {
             const roles = col.source.roles || {};
             if (roles.y && !yCol) yCol = col;
             else if (roles.size && !sizeCol) sizeCol = col;
             else if (roles.source && !sourceCol) sourceCol = col;
-            else if (roles.x) facetCols.push(col);
+            else if (roles.x) xCols.push(col);
         }
-        if (!yCol || !facetCols.length) return null;
+
+        /* Y-Kennzahl bestimmen: Y-Rolle belegt → fest (keine Auswahl im
+           Visual). Sonst wird die im Visual gewählte Kennzahl (persistiert
+           in facetten.yKey) aus den X-Kennzahlen genommen; die übrigen
+           bilden die Facetten. */
+        const keyOf = (c: DataViewValueColumn) => c.source.queryName || c.source.displayName;
+        let measures: MeasureOption[] = [];
+        let facetCols: DataViewValueColumn[];
+        if (!yCol) {
+            if (xCols.length < 2) return null;
+            const persisted = String(
+                (dataView.metadata.objects?.facetten as { yKey?: string } | undefined)?.yKey || "");
+            yCol = xCols.find(c => keyOf(c) === persisted) || xCols[0];
+            facetCols = xCols.filter(c => c !== yCol);
+            measures = xCols.map(c => ({ key: keyOf(c), label: c.source.displayName }));
+        } else {
+            facetCols = xCols;
+        }
+        if (!facetCols.length) return null;
 
         const n = detailCol.values.length;
         const legendNames: string[] = [];
@@ -121,9 +139,16 @@ export class Visual implements IVisual {
             });
         }
 
-        const legend: LegendItem[] = legendNames.map((name, k) => ({
-            name, color: DEFAULT_PALETTE[k % DEFAULT_PALETTE.length]
-        }));
+        /* Datenfarben: per Formatbereich/Fx gesetzte Farbe je Legendenwert
+           (category.objects) schlägt die validierte Standard-Palette. */
+        const legend: LegendItem[] = legendNames.map((name, k) => {
+            let color = DEFAULT_PALETTE[k % DEFAULT_PALETTE.length];
+            const obj = legendCol?.objects?.[legendFirstRow[k]] as
+                { datenfarben?: { fill?: powerbi.Fill } } | undefined;
+            const custom = obj?.datenfarben?.fill?.solid?.color;
+            if (custom) color = custom;
+            return { name, color };
+        });
 
         const facets: FacetInput[] = facetCols.map(col => ({
             key: col.source.queryName || col.source.displayName,
@@ -143,7 +168,8 @@ export class Visual implements IVisual {
         return {
             input: {
                 yLabel: yCol.source.displayName,
-                rows, facets, legend, footer
+                rows, facets, legend, footer,
+                measures, yKey: keyOf(yCol)
             },
             detailCol, legendCol, legendFirstRow,
             yCol, facetCols, sizeCol, highlights
@@ -196,7 +222,14 @@ export class Visual implements IVisual {
         this.root.style.background = tokens.surface;
 
         const input: RenderInput = this.parsed ? this.parsed.input :
-            { yLabel: "", rows: [], facets: [], legend: [], footer: "" };
+            { yLabel: "", rows: [], facets: [], legend: [], footer: "", measures: [], yKey: "" };
+
+        this.populateColorSlices();
+
+        /* Größen-Preset: skaliert Schrift UND Punktgrößen; Feinjustierung
+           multipliziert darauf. */
+        const preset = String(s.darstellungCard.sizePreset.value.value);
+        const presetFactor = preset === "hd" ? 0.85 : preset === "uhd" ? 1.8 : 1.0;
 
         const opts: RenderOptions = {
             width: options.viewport.width,
@@ -208,11 +241,29 @@ export class Visual implements IVisual {
             sortByR: !!s.facettenCard.sortByR.value,
             zeroBaseline: !!s.facettenCard.zeroBaseline.value,
             columns: Number(s.facettenCard.columns.value) || 0,
-            pointSize: Number(s.darstellungCard.pointSize.value) || 4,
+            pointSize: (Number(s.darstellungCard.pointSize.value) || 4) * presetFactor,
             sizeEnabled: !!s.darstellungCard.sizeEnabled.value,
-            fontScale: Math.max(0.5, (Number(s.darstellungCard.fontScale.value) || 100) / 100),
+            fontScale: Math.max(0.5, (Number(s.darstellungCard.fontScale.value) || 100) / 100) * presetFactor,
             footerFontSize: Number(s.fusszeileCard.fontSize.value) || 9,
             showLegend: !!s.darstellungCard.showLegend.value,
+            header: {
+                title: s.kopfCard.show.value ? String(s.kopfCard.title.value || "") : "",
+                subtitle: String(s.kopfCard.subtitle.value || "")
+            },
+            ySelector: input.measures.length > 1
+                ? String(s.facettenCard.ySelector.value.value) as "none" | "dropdown" | "chips"
+                : "none",
+            onYSelect: (key) => {
+                this.host.persistProperties({
+                    merge: [{ objectName: "facetten", selector: null, properties: { yKey: key } }]
+                });
+            },
+            panel: {
+                show: !!s.panelCard.show.value,
+                widthPx: Number(s.panelCard.width.value) || 250,
+                showDetailCard: !!s.panelCard.detailCard.value,
+                initialCollapsed: !!s.panelCard.startCollapsed.value
+            },
             dim: this.dimFn(),
             highlightRow: this.selectedRows.size === 1 ? [...this.selectedRows][0] : null,
             formatY: (v) => this.fmt.format(v),
@@ -229,6 +280,28 @@ export class Visual implements IVisual {
             }
         };
         renderScatterMultiples(this.root, input, opts);
+    }
+
+    /* Formatbereich „Datenfarben": je Legendenwert ein ColorPicker mit
+       Selector auf den Kategoriewert — Power BI blendet dafür auch die
+       bedingte Formatierung (Fx) ein. */
+    private populateColorSlices() {
+        const card = this.formattingSettings.farbenCard;
+        card.slices = [];
+        const p = this.parsed;
+        if (!p || !p.legendCol) return;
+        p.input.legend.forEach((item, k) => {
+            const selectionId = this.host.createSelectionIdBuilder()
+                .withCategory(p.legendCol, p.legendFirstRow[k])
+                .createSelectionId();
+            const slice = new formattingSettings.ColorPicker({
+                name: "fill",
+                displayName: item.name,
+                value: { value: item.color }
+            });
+            (slice as unknown as { selector: powerbi.data.Selector }).selector = selectionId.getSelector();
+            card.slices.push(slice);
+        });
     }
 
     /* ---------- Interaktion ---------- */

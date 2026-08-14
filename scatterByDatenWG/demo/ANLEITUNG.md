@@ -74,15 +74,34 @@ Jede Spalte kommt pro Land genau einmal vor — „Durchschnitt" (bzw. jede ande
 Aggregation) ist daher **verlustfrei**, ein Umschalten auf „Nicht
 zusammenfassen" ist hier — anders als bei Zeitreihen-Daten — nicht nötig.
 
+**Alternative statt Feldparameter — Y-Wechsel direkt im Visual:** Statt einen
+Feldparameter zu bauen, um die Y-Kennzahl umschaltbar zu machen, geht es
+einfacher: Die Datenrolle **Y-Achse (Basis-Measure)** leer lassen und
+**stattdessen alle Kennzahlen** (inklusive der als Y gedachten) in den
+**X-Achsen**-Bucket legen. Bei **Facetten → Y-Kennzahl-Auswahl im Visual** auf
+„Dropdown im Kopf" oder „Chip-Leiste" stellen — die aktive Y-Kennzahl wird
+dann im Visual selbst gewählt (siehe Abschnitt 5) und dauerhaft gemerkt.
+
 ## 4. Formatbereich (Kurzreferenz)
 
+- **Kopfzeile**: anzeigen (an/aus), Titel, Untertitel — beide frei editierbar,
+  erscheinen als In-Visual-Kopfband oberhalb der Facetten.
 - **Darstellung**: Hell/Dunkel, Punktgröße, Größen-Measure verwenden (an/aus),
-  Schriftskalierung (75–300 %), Legende anzeigen.
+  Größen-Preset (Zielauflösung: Full HD 100 % / HD 85 % / 4K 180 % /
+  Benutzerdefiniert), Feinjustierung Schrift (75–300 %, wirkt zusätzlich zum
+  Preset), Legende anzeigen.
+- **Datenfarben**: pro Legendenwert (z. B. je Kontinent) einzeln einstellbare
+  Füllfarbe — die Liste erscheint dynamisch, sobald die Datenrolle „Farbe"
+  belegt ist; eignet sich auch für bedingte Formatierung je Legendenwert.
 - **Facetten**: X-Achsen-Skala (Automatisch/Linear/Logarithmisch), nach
   Korrelationsstärke sortieren, lineare X-Achse bei 0 beginnen, Spaltenzahl
-  (0 = automatisch nach Seitenverhältnis).
+  (0 = automatisch nach Seitenverhältnis), Y-Kennzahl-Auswahl im Visual
+  (Keine Auswahl im Visual / Dropdown im Kopf / Chip-Leiste — siehe
+  Abschnitt 3 für den Einsatz ohne Feldparameter).
 - **Regression**: Regressionsgerade (Keine / Eine Gerade je Facette / Je
   Farbgruppe), R² anzeigen.
+- **Side-Panel (Ranking)**: anzeigen (an/aus), Breite in px (180–420),
+  Detailkarte bei Hover (an/aus), eingeklappt starten (an/aus).
 - **Quellen-Fußzeile**: anzeigen (an/aus), Text (nur genutzt, wenn die
   Datenrolle „Quelle" nicht belegt ist — die Datenrolle hat Vorrang),
   Schriftgröße.
@@ -97,6 +116,30 @@ zusammenfassen" ist hier — anders als bei Zeitreihen-Daten — nicht nötig.
 - **Klick ins Leere** = hebt Filter/Selektion wieder auf.
 - **Rechtsklick** = Kontextmenü (Drillthrough usw.).
 
+### Side-Panel (Ranking)
+
+- **Suche**: Freitextfeld im Panel filtert die Ranking-Liste live nach
+  Land-/Kategoriename.
+- **Hover** über einen Eintrag der Panel-Liste = Highlight überall — wirkt wie
+  der Hover direkt auf einen Punkt und markiert das Land in allen Facetten.
+- **Klick** auf einen Eintrag = Pin + Cross-Filter — das Land bleibt markiert
+  (Pin), auch wenn die Maus das Panel verlässt, und filtert zusätzlich andere
+  Visuals der Seite.
+- **Einklappen**: Panel lässt sich über den Einklapp-Steuerpunkt am Rand
+  ein-/ausklappen; Startzustand ist im Formatbereich unter „Side-Panel
+  (Ranking) → Eingeklappt starten" einstellbar.
+- **Detailkarte bei Hover**: zeigt zur aktuell gehoverten Zeile Rang sowie
+  einen Min-Max-Verteilungsbalken der Kennzahl über alle Länder.
+
+### Y-Wechsel im Visual
+
+Wenn Y-Kennzahl-Auswahl im Visual aktiv ist (Formatbereich, Facetten — siehe
+Abschnitt 3 zum Setup ohne Feldparameter), erscheint je nach gewählter
+Variante entweder ein **Dropdown im Kopf** oder eine **Chip-Leiste**; ein
+Klick/Auswahl dort wechselt sofort die aktive Y-Kennzahl für alle Facetten,
+Regressionslinien und Sortierungen und wird dauerhaft gemerkt (auch nach
+Neuladen des Reports).
+
 ## 6. Empfohlene Seite
 
 - **Y** = `life_satisfaction_0_10` gegen 6–8 **X**-Indikatoren gleichzeitig
@@ -108,3 +151,7 @@ zusammenfassen" ist hier — anders als bei Zeitreihen-Daten — nicht nötig.
   und Sortierung rechnen sich live auf der gefilterten Auswahl neu.
 - `gdp_per_capita_ppp` ist stark schief verteilt — die Skala „Automatisch"
   erkennt das und wählt eine logarithmische X-Achse für diese Facette.
+- **Für 4K-Bildschirme/Beamer**: Formatbereich → Darstellung → Größen-Preset
+  auf **„4K (180 %)"** stellen — skaliert Schrift und Bedienelemente in einem
+  Schritt für große Auflösungen; Feinjustierung Schrift bleibt für den
+  letzten Schliff zusätzlich verfügbar.
