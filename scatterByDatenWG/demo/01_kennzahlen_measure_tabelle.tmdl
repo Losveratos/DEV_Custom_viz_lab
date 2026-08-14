@@ -2,7 +2,6 @@ createOrReplace
 
 	/// Dedizierte Measure-Tabelle — Kennzahlen zum Datensatz country_data_15_indicators
 	table _Kennzahlen
-		isHidden: false
 
 		/// Ø Cantril-Ladder-Lebensbewertung der gefilterten Länder (0–10)
 		measure 'Lebenszufriedenheit (0–10)' = AVERAGE(country_data_15_indicators[life_satisfaction_0_10])

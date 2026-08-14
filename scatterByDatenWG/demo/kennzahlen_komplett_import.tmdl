@@ -1,0 +1,297 @@
+createOrReplace
+
+	/// Dedizierte Measure-Tabelle — Kennzahlen zum Datensatz country_data_15_indicators
+	table _Kennzahlen
+
+		/// Ø Cantril-Ladder-Lebensbewertung der gefilterten Länder (0–10)
+		measure 'Lebenszufriedenheit (0–10)' = AVERAGE(country_data_15_indicators[life_satisfaction_0_10])
+			formatString: 0.00
+
+		/// Ø BIP pro Kopf, kaufkraftbereinigt (PPP), inflationsbereinigt
+		measure 'BIP pro Kopf (PPP $)' = AVERAGE(country_data_15_indicators[gdp_per_capita_ppp])
+			formatString: #,0
+
+		/// Ø Human Development Index (0–1)
+		measure 'HDI' = AVERAGE(country_data_15_indicators[hdi])
+			formatString: 0.000
+
+		/// Ø Lebenserwartung bei Geburt in Jahren
+		measure 'Lebenserwartung (Jahre)' = AVERAGE(country_data_15_indicators[life_expectancy])
+			formatString: 0.0
+
+		/// Ø EIU-Demokratie-Index (0–10)
+		measure 'Demokratie-Index (0–10)' = AVERAGE(country_data_15_indicators[democracy_index_eiu])
+			formatString: 0.00
+
+		/// Ø Corruption Perceptions Index (0 = korrupt … 100 = sauber)
+		measure 'Korruptionswahrnehmung (CPI)' = AVERAGE(country_data_15_indicators[corruption_perceptions_index])
+			formatString: 0
+
+		/// Ø Einkommens-Gini (0–100, höher = ungleicher)
+		measure 'Gini-Index' = AVERAGE(country_data_15_indicators[gini_index])
+			formatString: 0.0
+
+		/// Ø Arbeitslosenquote 15+ in Prozentpunkten
+		measure 'Arbeitslosenquote (%)' = AVERAGE(country_data_15_indicators[unemployment_rate_pct])
+			formatString: 0.0
+
+		/// Ø Steuereinnahmen in % des BIP
+		measure 'Steuereinnahmen (% BIP)' = AVERAGE(country_data_15_indicators[tax_revenue_pct_gdp])
+			formatString: 0.0
+
+		/// Ø Suizide je 100.000 Einwohner
+		measure 'Suizidrate (je 100k)' = AVERAGE(country_data_15_indicators[suicide_rate_per_100k])
+			formatString: 0.0
+
+		/// Ø Anteil städtischer Bevölkerung in %
+		measure 'Urbanisierung (%)' = AVERAGE(country_data_15_indicators[urban_population_pct])
+			formatString: 0.0
+
+		/// Ø Internetnutzer in % der Bevölkerung
+		measure 'Internetnutzer (%)' = AVERAGE(country_data_15_indicators[internet_users_pct])
+			formatString: 0.0
+
+		/// Ø Wochenarbeitszeit Beschäftigter in Stunden
+		measure 'Wochenarbeitszeit (h)' = AVERAGE(country_data_15_indicators[working_hours_per_week])
+			formatString: 0.0
+
+		/// Summe der Bevölkerung der gefilterten Länder
+		measure 'Bevölkerung' = SUM(country_data_15_indicators[population])
+			formatString: #,0
+
+		/// Ø Spitzensteuersatz Einkommen in %
+		measure 'Spitzensteuersatz (%)' = AVERAGE(country_data_15_indicators[top_income_tax_rate_pct])
+			formatString: 0.0
+
+		/// Ø RSF-Pressefreiheitsindex 2025 (0–100, höher = freier)
+		measure 'Pressefreiheit (RSF 2025)' = AVERAGE(country_data_15_indicators[press_freedom_rsf_2025])
+			formatString: 0.0
+
+		/// Technische Pflichtspalte der Measure-Tabelle — bleibt versteckt und leer
+		column Platzhalter
+			dataType: string
+			isHidden
+			summarizeBy: none
+			isNameInferred
+			sourceColumn: [Platzhalter]
+
+		partition _Kennzahlen = calculated
+			mode: import
+			source = ROW("Platzhalter", BLANK())
+
+	table country_data_15_indicators
+		lineageTag: 127bb136-1c6f-4a85-95f9-8e00a5e84fee
+
+		column country
+			dataType: string
+			lineageTag: 3669e450-bea4-4481-a1cc-8b751e65df5a
+			summarizeBy: none
+			sourceColumn: country
+
+			annotation SummarizationSetBy = Automatic
+
+		column region
+			dataType: string
+			lineageTag: e6017d7d-339b-4dde-a51a-773a93b04464
+			summarizeBy: none
+			sourceColumn: region
+
+			annotation SummarizationSetBy = Automatic
+
+		column iso2
+			dataType: string
+			lineageTag: db9f46b5-02a1-46cb-81ac-c7284200f02a
+			summarizeBy: none
+			sourceColumn: iso2
+
+			annotation SummarizationSetBy = Automatic
+
+		column life_satisfaction_0_10
+			dataType: double
+			isHidden
+			lineageTag: a3d10a3e-b4bf-437d-a911-d859b74c2202
+			summarizeBy: none
+			sourceColumn: life_satisfaction_0_10
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column gdp_per_capita_ppp
+			dataType: double
+			isHidden
+			lineageTag: f442ce26-1d59-4ff3-aada-124fa364b663
+			summarizeBy: none
+			sourceColumn: gdp_per_capita_ppp
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column hdi
+			dataType: double
+			isHidden
+			lineageTag: 03f187af-f49f-4fda-8ccb-a1dfa8e81cda
+			summarizeBy: none
+			sourceColumn: hdi
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column life_expectancy
+			dataType: double
+			isHidden
+			lineageTag: 0c15cf2b-a38b-4d46-af27-882f5f446d36
+			summarizeBy: none
+			sourceColumn: life_expectancy
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column democracy_index_eiu
+			dataType: double
+			isHidden
+			lineageTag: 8dca4b76-cfd8-4156-8c38-f715f275abf1
+			summarizeBy: none
+			sourceColumn: democracy_index_eiu
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column corruption_perceptions_index
+			dataType: double
+			isHidden
+			lineageTag: 18a90c77-e9f2-4f6a-9196-c870df2b8872
+			summarizeBy: none
+			sourceColumn: corruption_perceptions_index
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column gini_index
+			dataType: double
+			isHidden
+			lineageTag: dd6002c4-ed4b-43ac-8684-b8ff13bea1c4
+			summarizeBy: none
+			sourceColumn: gini_index
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column unemployment_rate_pct
+			dataType: double
+			isHidden
+			lineageTag: 5b674abd-fcaa-450f-b9dd-17cce1e0149d
+			summarizeBy: none
+			sourceColumn: unemployment_rate_pct
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column tax_revenue_pct_gdp
+			dataType: double
+			isHidden
+			lineageTag: 3cae9e58-31cf-4076-b4b1-b74d46577661
+			summarizeBy: none
+			sourceColumn: tax_revenue_pct_gdp
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column suicide_rate_per_100k
+			dataType: double
+			isHidden
+			lineageTag: c3f9012d-7445-4fe2-a140-48bff80eaa82
+			summarizeBy: none
+			sourceColumn: suicide_rate_per_100k
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column urban_population_pct
+			dataType: double
+			isHidden
+			lineageTag: 2a7eb33a-fc71-40c6-9cd9-90f81b81c39f
+			summarizeBy: none
+			sourceColumn: urban_population_pct
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column internet_users_pct
+			dataType: double
+			isHidden
+			lineageTag: b7e3822a-322c-45ac-8a49-76927dee9d4a
+			summarizeBy: none
+			sourceColumn: internet_users_pct
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column working_hours_per_week
+			dataType: double
+			isHidden
+			lineageTag: 32667997-5a15-42e9-ad74-7f3d2ce6f1d9
+			summarizeBy: none
+			sourceColumn: working_hours_per_week
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column population
+			dataType: double
+			isHidden
+			lineageTag: bc1beb35-1845-44b4-9759-7087d5375d7d
+			summarizeBy: none
+			sourceColumn: population
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column top_income_tax_rate_pct
+			dataType: double
+			isHidden
+			lineageTag: 44be57d3-81b2-42e5-ae84-0156c0d75dca
+			summarizeBy: none
+			sourceColumn: top_income_tax_rate_pct
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		column press_freedom_rsf_2025
+			dataType: double
+			isHidden
+			lineageTag: d96f1f24-64e1-4f4e-859c-3241bb6b02ab
+			summarizeBy: none
+			sourceColumn: press_freedom_rsf_2025
+
+			annotation SummarizationSetBy = User
+
+			annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+		partition country_data_15_indicators = m
+			mode: import
+			source =
+					let
+					  Quelle = Csv.Document(File.Contents("C:\Users\MichaelTenner\Desktop\files\country_data_15_indicators.csv"), [Delimiter = ",", Columns = 19, QuoteStyle = QuoteStyle.None]),
+					  #"Höher gestufte Header" = Table.PromoteHeaders(Quelle, [PromoteAllScalars = true]),
+					    #"Geänderter Typ mit Gebietsschema" = Table.TransformColumnTypes(#"Höher gestufte Header", {{"life_satisfaction_0_10", type number}, {"gdp_per_capita_ppp", type number}, {"hdi", type number}, {"life_expectancy", type number}, {"democracy_index_eiu", type number}, {"corruption_perceptions_index", type number}, {"gini_index", type number}, {"unemployment_rate_pct", type number}, {"tax_revenue_pct_gdp", type number}, {"suicide_rate_per_100k", type number}, {"urban_population_pct", type number}, {"internet_users_pct", type number}, {"working_hours_per_week", type number}, {"population", type number}, {"top_income_tax_rate_pct", type number}, {"press_freedom_rsf_2025", type number}}, "en-US")
+					in
+					    #"Geänderter Typ mit Gebietsschema"
+
+		annotation PBI_NavigationStepName = Navigation
+
+		annotation PBI_ResultType = Table
