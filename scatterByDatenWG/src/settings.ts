@@ -1,29 +1,3 @@
-/*
- *  Power BI Visualizations
- *
- *  Copyright (c) Microsoft Corporation
- *  All rights reserved.
- *  MIT License
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the ""Software""), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
- */
-
 "use strict";
 
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
@@ -32,52 +6,153 @@ import FormattingSettingsCard = formattingSettings.SimpleCard;
 import FormattingSettingsSlice = formattingSettings.Slice;
 import FormattingSettingsModel = formattingSettings.Model;
 
-/**
- * Data Point Formatting Card
- */
-class DataPointCardSettings extends FormattingSettingsCard {
-    defaultColor = new formattingSettings.ColorPicker({
-        name: "defaultColor",
-        displayName: "Default color",
-        value: { value: "" }
+const item = (value: string, displayName: string) => ({ value, displayName });
+
+class DarstellungCardSettings extends FormattingSettingsCard {
+    theme = new formattingSettings.ItemDropdown({
+        name: "theme",
+        displayName: "Hintergrund",
+        items: [item("light", "Hell"), item("dark", "Dunkel")],
+        value: item("light", "Hell")
     });
 
-    showAllDataPoints = new formattingSettings.ToggleSwitch({
-        name: "showAllDataPoints",
-        displayName: "Show all",
+    pointSize = new formattingSettings.NumUpDown({
+        name: "pointSize",
+        displayName: "Punktgröße",
+        value: 4,
+        options: {
+            minValue: { type: 0, value: 2 },
+            maxValue: { type: 1, value: 20 }
+        }
+    });
+
+    sizeEnabled = new formattingSettings.ToggleSwitch({
+        name: "sizeEnabled",
+        displayName: "Größen-Measure verwenden",
         value: true
     });
 
-    fill = new formattingSettings.ColorPicker({
-        name: "fill",
-        displayName: "Fill",
-        value: { value: "" }
+    fontScale = new formattingSettings.NumUpDown({
+        name: "fontScale",
+        displayName: "Schriftskalierung (%)",
+        value: 100,
+        options: {
+            minValue: { type: 0, value: 75 },
+            maxValue: { type: 1, value: 300 }
+        }
     });
 
-    fillRule = new formattingSettings.ColorPicker({
-        name: "fillRule",
-        displayName: "Color saturation",
-        value: { value: "" }
+    showLegend = new formattingSettings.ToggleSwitch({
+        name: "showLegend",
+        displayName: "Legende anzeigen",
+        value: true
+    });
+
+    name: string = "darstellung";
+    displayName: string = "Darstellung";
+    slices: Array<FormattingSettingsSlice> = [
+        this.theme, this.pointSize, this.sizeEnabled, this.fontScale, this.showLegend
+    ];
+}
+
+class FacettenCardSettings extends FormattingSettingsCard {
+    xScale = new formattingSettings.ItemDropdown({
+        name: "xScale",
+        displayName: "X-Achsen-Skala",
+        items: [
+            item("auto", "Automatisch (log bei schiefer Verteilung)"),
+            item("linear", "Linear"),
+            item("log", "Logarithmisch")
+        ],
+        value: item("auto", "Automatisch (log bei schiefer Verteilung)")
+    });
+
+    sortByR = new formattingSettings.ToggleSwitch({
+        name: "sortByR",
+        displayName: "Nach Korrelationsstärke sortieren",
+        value: true
+    });
+
+    zeroBaseline = new formattingSettings.ToggleSwitch({
+        name: "zeroBaseline",
+        displayName: "Lineare X-Achse bei 0 beginnen",
+        value: false
+    });
+
+    columns = new formattingSettings.NumUpDown({
+        name: "columns",
+        displayName: "Spalten (0 = automatisch)",
+        value: 0,
+        options: {
+            minValue: { type: 0, value: 0 },
+            maxValue: { type: 1, value: 8 }
+        }
+    });
+
+    name: string = "facetten";
+    displayName: string = "Facetten";
+    slices: Array<FormattingSettingsSlice> = [
+        this.xScale, this.sortByR, this.zeroBaseline, this.columns
+    ];
+}
+
+class RegressionCardSettings extends FormattingSettingsCard {
+    mode = new formattingSettings.ItemDropdown({
+        name: "mode",
+        displayName: "Regressionsgerade",
+        items: [
+            item("none", "Keine"),
+            item("overall", "Eine Gerade je Facette"),
+            item("byColor", "Je Farbgruppe")
+        ],
+        value: item("overall", "Eine Gerade je Facette")
+    });
+
+    showR2 = new formattingSettings.ToggleSwitch({
+        name: "showR2",
+        displayName: "R² anzeigen",
+        value: true
+    });
+
+    name: string = "regression";
+    displayName: string = "Regression";
+    slices: Array<FormattingSettingsSlice> = [this.mode, this.showR2];
+}
+
+class FusszeileCardSettings extends FormattingSettingsCard {
+    show = new formattingSettings.ToggleSwitch({
+        name: "show",
+        displayName: "Fußzeile anzeigen",
+        value: true
+    });
+
+    text = new formattingSettings.TextInput({
+        name: "text",
+        displayName: "Text (Datenrolle 'Quelle' hat Vorrang)",
+        placeholder: "Quelle: …",
+        value: ""
     });
 
     fontSize = new formattingSettings.NumUpDown({
         name: "fontSize",
-        displayName: "Text Size",
-        value: 12
+        displayName: "Schriftgröße",
+        value: 9,
+        options: {
+            minValue: { type: 0, value: 7 },
+            maxValue: { type: 1, value: 18 }
+        }
     });
 
-    name: string = "dataPoint";
-    displayName: string = "Data colors";
-    slices: Array<FormattingSettingsSlice> = [this.defaultColor, this.showAllDataPoints, this.fill, this.fillRule, this.fontSize];
+    name: string = "fusszeile";
+    displayName: string = "Quellen-Fußzeile";
+    slices: Array<FormattingSettingsSlice> = [this.show, this.text, this.fontSize];
 }
 
-/**
-* visual settings model class
-*
-*/
 export class VisualFormattingSettingsModel extends FormattingSettingsModel {
-    // Create formatting settings model formatting cards
-    dataPointCard = new DataPointCardSettings();
+    darstellungCard = new DarstellungCardSettings();
+    facettenCard = new FacettenCardSettings();
+    regressionCard = new RegressionCardSettings();
+    fusszeileCard = new FusszeileCardSettings();
 
-    cards = [this.dataPointCard];
+    cards = [this.darstellungCard, this.facettenCard, this.regressionCard, this.fusszeileCard];
 }

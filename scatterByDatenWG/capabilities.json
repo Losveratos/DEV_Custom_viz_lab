@@ -1,48 +1,108 @@
 {
     "dataRoles": [
         {
-            "displayName": "Category Data",
-            "name": "category",
+            "displayName": "Detail (z. B. Land)",
+            "name": "detail",
             "kind": "Grouping"
         },
         {
-            "displayName": "Measure Data",
-            "name": "measure",
+            "displayName": "Farbe (z. B. Kontinent)",
+            "name": "legend",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Y-Achse (Basis-Measure)",
+            "name": "y",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "X-Achsen (je Measure eine Facette)",
+            "name": "x",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Größe (z. B. Bevölkerung)",
+            "name": "size",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Quelle (Fußzeile)",
+            "name": "source",
             "kind": "Measure"
         }
     ],
     "objects": {
-        "dataPoint": {
+        "darstellung": {
             "properties": {
-                "defaultColor": {
+                "theme": {
                     "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
+                        "enumeration": [
+                            { "displayName": "Hell", "value": "light" },
+                            { "displayName": "Dunkel", "value": "dark" }
+                        ]
                     }
                 },
-                "showAllDataPoints": {
+                "pointSize": {
+                    "type": { "numeric": true }
+                },
+                "sizeEnabled": {
+                    "type": { "bool": true }
+                },
+                "fontScale": {
+                    "type": { "numeric": true }
+                },
+                "showLegend": {
+                    "type": { "bool": true }
+                }
+            }
+        },
+        "facetten": {
+            "properties": {
+                "xScale": {
                     "type": {
-                        "bool": true
+                        "enumeration": [
+                            { "displayName": "Automatisch (log bei schiefer Verteilung)", "value": "auto" },
+                            { "displayName": "Linear", "value": "linear" },
+                            { "displayName": "Logarithmisch", "value": "log" }
+                        ]
                     }
                 },
-                "fill": {
+                "sortByR": {
+                    "type": { "bool": true }
+                },
+                "zeroBaseline": {
+                    "type": { "bool": true }
+                },
+                "columns": {
+                    "type": { "numeric": true }
+                }
+            }
+        },
+        "regression": {
+            "properties": {
+                "mode": {
                     "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
+                        "enumeration": [
+                            { "displayName": "Keine", "value": "none" },
+                            { "displayName": "Eine Gerade je Facette", "value": "overall" },
+                            { "displayName": "Je Farbgruppe", "value": "byColor" }
+                        ]
                     }
                 },
-                "fillRule": {
-                    "type": {
-                        "fill": {}
-                    }
+                "showR2": {
+                    "type": { "bool": true }
+                }
+            }
+        },
+        "fusszeile": {
+            "properties": {
+                "show": {
+                    "type": { "bool": true }
                 },
-                 "fontSize": {
+                "text": {
+                    "type": { "text": true }
+                },
+                "fontSize": {
                     "type": {
                         "formatting": {
                             "fontSize": true
@@ -54,26 +114,45 @@
     },
     "dataViewMappings": [
         {
+            "conditions": [
+                {
+                    "detail": { "max": 1 },
+                    "legend": { "max": 1 },
+                    "y": { "max": 1 },
+                    "size": { "max": 1 },
+                    "source": { "max": 1 },
+                    "x": { "max": 20 }
+                }
+            ],
             "categorical": {
                 "categories": {
-                    "for": {
-                        "in": "category"
-                    },
-                    "dataReductionAlgorithm": {
-                        "top": {}
-                    }
+                    "select": [
+                        { "for": { "in": "detail" } },
+                        { "for": { "in": "legend" } }
+                    ],
+                    "dataReductionAlgorithm": { "window": { "count": 30000 } }
                 },
                 "values": {
                     "select": [
-                        {
-                            "bind": {
-                                "to": "measure"
-                            }
-                        }
+                        { "bind": { "to": "y" } },
+                        { "for": { "in": "x" } },
+                        { "bind": { "to": "size" } },
+                        { "bind": { "to": "source" } }
                     ]
                 }
             }
         }
     ],
+    "sorting": {
+        "default": {}
+    },
+    "tooltips": {
+        "supportedTypes": {
+            "default": true,
+            "canvas": true
+        }
+    },
+    "supportsHighlight": true,
+    "supportsMultiVisualSelection": true,
     "privileges": []
 }
