@@ -1,0 +1,81 @@
+createOrReplace
+
+	/// Dedizierte Measure-Tabelle — Kennzahlen zum Datensatz country_data_15_indicators
+	table _Kennzahlen
+		isHidden: false
+
+		/// Ø Cantril-Ladder-Lebensbewertung der gefilterten Länder (0–10)
+		measure 'Lebenszufriedenheit (0–10)' = AVERAGE(country_data_15_indicators[life_satisfaction_0_10])
+			formatString: 0.00
+
+		/// Ø BIP pro Kopf, kaufkraftbereinigt (PPP), inflationsbereinigt
+		measure 'BIP pro Kopf (PPP $)' = AVERAGE(country_data_15_indicators[gdp_per_capita_ppp])
+			formatString: #,0
+
+		/// Ø Human Development Index (0–1)
+		measure 'HDI' = AVERAGE(country_data_15_indicators[hdi])
+			formatString: 0.000
+
+		/// Ø Lebenserwartung bei Geburt in Jahren
+		measure 'Lebenserwartung (Jahre)' = AVERAGE(country_data_15_indicators[life_expectancy])
+			formatString: 0.0
+
+		/// Ø EIU-Demokratie-Index (0–10)
+		measure 'Demokratie-Index (0–10)' = AVERAGE(country_data_15_indicators[democracy_index_eiu])
+			formatString: 0.00
+
+		/// Ø Corruption Perceptions Index (0 = korrupt … 100 = sauber)
+		measure 'Korruptionswahrnehmung (CPI)' = AVERAGE(country_data_15_indicators[corruption_perceptions_index])
+			formatString: 0
+
+		/// Ø Einkommens-Gini (0–100, höher = ungleicher)
+		measure 'Gini-Index' = AVERAGE(country_data_15_indicators[gini_index])
+			formatString: 0.0
+
+		/// Ø Arbeitslosenquote 15+ in Prozentpunkten
+		measure 'Arbeitslosenquote (%)' = AVERAGE(country_data_15_indicators[unemployment_rate_pct])
+			formatString: 0.0
+
+		/// Ø Steuereinnahmen in % des BIP
+		measure 'Steuereinnahmen (% BIP)' = AVERAGE(country_data_15_indicators[tax_revenue_pct_gdp])
+			formatString: 0.0
+
+		/// Ø Suizide je 100.000 Einwohner
+		measure 'Suizidrate (je 100k)' = AVERAGE(country_data_15_indicators[suicide_rate_per_100k])
+			formatString: 0.0
+
+		/// Ø Anteil städtischer Bevölkerung in %
+		measure 'Urbanisierung (%)' = AVERAGE(country_data_15_indicators[urban_population_pct])
+			formatString: 0.0
+
+		/// Ø Internetnutzer in % der Bevölkerung
+		measure 'Internetnutzer (%)' = AVERAGE(country_data_15_indicators[internet_users_pct])
+			formatString: 0.0
+
+		/// Ø Wochenarbeitszeit Beschäftigter in Stunden
+		measure 'Wochenarbeitszeit (h)' = AVERAGE(country_data_15_indicators[working_hours_per_week])
+			formatString: 0.0
+
+		/// Summe der Bevölkerung der gefilterten Länder
+		measure 'Bevölkerung' = SUM(country_data_15_indicators[population])
+			formatString: #,0
+
+		/// Ø Spitzensteuersatz Einkommen in %
+		measure 'Spitzensteuersatz (%)' = AVERAGE(country_data_15_indicators[top_income_tax_rate_pct])
+			formatString: 0.0
+
+		/// Ø RSF-Pressefreiheitsindex 2025 (0–100, höher = freier)
+		measure 'Pressefreiheit (RSF 2025)' = AVERAGE(country_data_15_indicators[press_freedom_rsf_2025])
+			formatString: 0.0
+
+		/// Technische Pflichtspalte der Measure-Tabelle — bleibt versteckt und leer
+		column Platzhalter
+			dataType: string
+			isHidden
+			summarizeBy: none
+			isNameInferred
+			sourceColumn: [Platzhalter]
+
+		partition _Kennzahlen = calculated
+			mode: import
+			source = ROW("Platzhalter", BLANK())
