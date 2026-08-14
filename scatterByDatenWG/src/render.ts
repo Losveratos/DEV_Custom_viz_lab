@@ -8,13 +8,19 @@
  *
  * Aufbau:
  *   container
- *     header   (Legenden-Chips + "Y: <label>")
- *     grid     (CSS-Grid aus Facetten-Kacheln, je Kachel ein SVG)
+ *     titleBar (optional: In-Visual-Titel + Untertitel)
+ *     header   (Legenden-Chips + "Y: <label>" bzw. Y-Auswahl als <select>)
+ *     chipsRow (optional: Y-Auswahl als Chips, umbrechend)
+ *     body     (Flex-Zeile)
+ *       grid   (CSS-Grid aus Facetten-Kacheln, je Kachel ein SVG)
+ *       panel  (optional: Suche + Ranking-Liste, rechts)
+ *     card     (optional: Detailkarte als Overlay links neben dem Panel)
  *     footer   (optional, max. 2 Zeilen)
  */
 
 import {
-    RenderInput, RenderOptions, RenderTokens, OlsFit, FacetStats
+    RenderInput, RenderOptions, RenderTokens, OlsFit, FacetStats,
+    RowInput, LegendItem, FacetInput
 } from "./model";
 import { computeFacetStats, niceTicksLinear, logTicks } from "./stats";
 
@@ -39,7 +45,20 @@ const MIN_TILE_W_AUTO_BASE = 80;   // automatische Spaltenzahl
 const MIN_TILE_W_HARD_BASE = 46;   // ausdrueckliche Spaltenvorgabe des Nutzers
 const MIN_TILE_FONT_PART = 28;
 
+/* Side-Panel */
+const PANEL_COLLAPSED_W = 22;   // eingeklappte Leiste (nur Pfeil-Knopf)
+const PANEL_MIN_W = 150;
+const PANEL_MAX_SHARE = 0.55;   // hoechstens so viel der Gesamtbreite
+const PANEL_ROW_BASE = 20;      // Zeilenhoehe der Rangliste (x fontScale)
+const PANEL_FS_FLOOR = 0.85;    // Panelbreite skaliert erst ab dieser Schriftgroesse
+
 const EMPTY_HINT = "Y-Measure und mindestens ein X-Measure zuweisen.";
+
+/* Panel-Zustand, der einen vom Renderer SELBST ausgeloesten Rerender
+ * ueberlebt (Ein-/Ausklappen, Suchtext). Wird beim naechsten Renderlauf
+ * verbraucht; ein Rerender von aussen setzt beides bewusst zurueck. */
+let carryCollapsed: boolean | null = null;
+let carrySearch: string | null = null;
 
 /* ------------------------------------------------------------------ *
  * kleine DOM-Helfer
@@ -55,6 +74,28 @@ function div(): HTMLDivElement {
 
 function svgEl(name: string): SVGElement {
     return document.createElementNS(SVG_NS, name) as SVGElement;
+}
+
+function span(): HTMLSpanElement {
+    return document.createElement("span");
+}
+
+/** Dunkles Theme? Relative Leuchtdichte des Seitenhintergrunds. */
+function isDarkSurface(hex: string): boolean {
+    const h = (hex || "").replace("#", "");
+    if (h.length < 6) { return false; }
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    if (!isFinite(r) || !isFinite(g) || !isFinite(b)) { return false; }
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 128;
+}
+
+/** Einzeiliger Text mit Ellipsis. */
+function ellipsis(el: HTMLElement): void {
+    el.style.overflow = "hidden";
+    el.style.textOverflow = "ellipsis";
+    el.style.whiteSpace = "nowrap";
 }
 
 function attrs(el: Element, map: Record<string, string | number>): void {
@@ -110,6 +151,17 @@ interface FacetPlan {
     txMin: number;
     txMax: number;
     ranges: Map<number, { lo: number; hi: number }>;
+}
+
+/** Eine Kennzahl fuer die Detailkarte: Werte, Spannweite, Anzahl. */
+interface MeasureView {
+    label: string;
+    key: string;             // "" = Y-Kennzahl (nutzt formatY)
+    isY: boolean;
+    vals: (number | null)[];
+    min: number;
+    max: number;
+    n: number;
 }
 
 interface Mark {
@@ -172,6 +224,12 @@ export function renderScatterMultiples(
     const H = Math.max(0, Math.floor(opts.height));
     const fs = opts.fontScale > 0 ? opts.fontScale : 1;
 
+    // Panel-Zustand aus einem selbst ausgeloesten Rerender uebernehmen.
+    const carriedCollapsed = carryCollapsed;
+    const carriedSearch = carrySearch === null ? "" : carrySearch;
+    carryCollapsed = null;
+    carrySearch = null;
+
     const container = div();
     container.style.boxSizing = "border-box";
     container.style.width = W + "px";
@@ -184,13 +242,13 @@ export function renderScatterMultiples(
     container.style.fontFamily = FONT_STACK;
     container.style.userSelect = "none";
     container.style.setProperty("-webkit-user-select", "none");
+    container.style.position = "relative";
     root.appendChild(container);
 
     container.addEventListener("contextmenu", function (ev: MouseEvent) {
         ev.preventDefault();
-        const t = ev.target as Element;
-        const a = t && t.getAttribute ? t.getAttribute("data-row") : null;
-        const rowIdx = a === null || a === undefined ? null : parseInt(a, 10);
+        // Panelzeilen tragen data-row am Zeilencontainer, Punkte am Kreis.
+        const rowIdx = rowOfDeep(ev.target, container);
         if (opts.onContextMenu) {
             opts.onContextMenu(rowIdx, ev.clientX, ev.clientY, ev);
         }
@@ -223,6 +281,46 @@ export function renderScatterMultiples(
         if (opts.onBackgroundClick) { opts.onBackgroundClick(ev); }
     });
 
+    /* --- In-Visual-Header ------------------------------------------------ */
+
+    const hdrCfg = opts.header || { title: "", subtitle: "" };
+    const titleTxt = hdrCfg.title || "";
+    const subTxt = hdrCfg.subtitle || "";
+    let titleH = 0;
+    if (titleTxt.length > 0) {
+        const tFs = 15 * fs;
+        const sFs = 11 * fs;
+        const bar = div();
+        bar.style.boxSizing = "border-box";
+        bar.style.flex = "0 0 auto";
+        bar.style.padding = "6px " + PAD + "px 3px";
+        bar.style.overflow = "hidden";
+        container.appendChild(bar);
+
+        const t = div();
+        t.style.fontSize = tFs.toFixed(1) + "px";
+        t.style.fontWeight = "600";
+        t.style.lineHeight = "1.35";
+        t.style.color = tokens.ink;
+        ellipsis(t);
+        t.appendChild(textNode(titleTxt));
+        t.title = titleTxt;
+        bar.appendChild(t);
+
+        titleH = Math.round(tFs * 1.35) + 9;
+        if (subTxt.length > 0) {
+            const s = div();
+            s.style.fontSize = sFs.toFixed(1) + "px";
+            s.style.lineHeight = "1.35";
+            s.style.color = tokens.muted;
+            ellipsis(s);
+            s.appendChild(textNode(subTxt));
+            s.title = subTxt;
+            bar.appendChild(s);
+            titleH += Math.round(sFs * 1.35);
+        }
+    }
+
     /* --- Kopfzeile ----------------------------------------------------- */
 
     const hdrFs = 11 * fs;
@@ -244,20 +342,85 @@ export function renderScatterMultiples(
         }
     }
 
-    const yTag = div();
-    yTag.style.marginLeft = "auto";
-    yTag.style.color = tokens.muted;
-    yTag.style.fontSize = hdrFs.toFixed(1) + "px";
-    yTag.style.overflow = "hidden";
-    yTag.style.textOverflow = "ellipsis";
-    yTag.style.whiteSpace = "nowrap";
-    yTag.style.paddingLeft = "8px";
-    const yLabel = input.yLabel || "";
-    yTag.appendChild(textNode("Y: " + yLabel));
-    yTag.title = "Y: " + yLabel;
-    header.appendChild(yTag);
+    /* Y-Kennzahl-Auswahl: nur sinnvoll ab zwei Kennzahlen. */
+    const measures = input && input.measures ? input.measures : [];
+    const yKey = input && input.yKey ? input.yKey : "";
+    const ySelMode = opts.ySelector || "none";
+    const ySelActive = measures.length > 1 && ySelMode !== "none";
+    const dark = isDarkSurface(tokens.surface);
+
+    if (ySelActive && ySelMode === "dropdown") {
+        const sel = document.createElement("select");
+        sel.style.marginLeft = "auto";
+        sel.style.boxSizing = "border-box";
+        sel.style.maxWidth = "220px";
+        sel.style.padding = "2px 4px";
+        sel.style.border = "1px solid " + tokens.border;
+        sel.style.borderRadius = "6px";
+        sel.style.background = tokens.card;
+        sel.style.color = tokens.ink;
+        sel.style.fontFamily = FONT_STACK;
+        sel.style.fontSize = hdrFs.toFixed(1) + "px";
+        sel.style.cursor = "pointer";
+        sel.style.setProperty("color-scheme", dark ? "dark" : "light");
+        for (let i = 0; i < measures.length; i++) {
+            const m = measures[i];
+            const o = document.createElement("option");
+            o.value = m.key;
+            o.appendChild(textNode(m.label || m.key));
+            if (m.key === yKey) { o.selected = true; }
+            sel.appendChild(o);
+        }
+        sel.title = "Y-Kennzahl";
+        sel.addEventListener("click", function (ev: MouseEvent) { ev.stopPropagation(); });
+        sel.addEventListener("change", function (ev: Event) {
+            if (opts.onYSelect) { opts.onYSelect(sel.value, ev); }
+        });
+        header.appendChild(sel);
+    } else {
+        const yTag = div();
+        yTag.style.marginLeft = "auto";
+        yTag.style.color = tokens.muted;
+        yTag.style.fontSize = hdrFs.toFixed(1) + "px";
+        yTag.style.paddingLeft = "8px";
+        ellipsis(yTag);
+        const yLabel = input.yLabel || "";
+        yTag.appendChild(textNode("Y: " + yLabel));
+        yTag.title = "Y: " + yLabel;
+        header.appendChild(yTag);
+    }
 
     const headerH = Math.round(hdrFs * 1.5) + 16;
+
+    /* --- Y-Auswahl als Chip-Zeile (eigene Zeile unter der Legende) ------- */
+
+    let chipsH = 0;
+    if (ySelActive && ySelMode === "chips") {
+        const cFs = 11 * fs;
+        const row = div();
+        row.style.boxSizing = "border-box";
+        row.style.display = "flex";
+        row.style.flexWrap = "wrap";
+        row.style.alignItems = "center";
+        row.style.gap = "5px";
+        row.style.flex = "0 0 auto";
+        row.style.padding = "0 " + PAD + "px 5px";
+        container.appendChild(row);
+
+        const chipLineH = Math.round(cFs * 1.5) + 6;
+        const avail = Math.max(40, W - 2 * PAD);
+        let lineW = 0;
+        let lines = 1;
+        for (let i = 0; i < measures.length; i++) {
+            const m = measures[i];
+            const active = m.key === yKey;
+            row.appendChild(makeYChip(m, active, tokens, cFs, opts));
+            const wPx = Math.min(160, Math.ceil((m.label || m.key).length * cFs * 0.55) + 18);
+            if (lineW > 0 && lineW + 5 + wPx > avail) { lines++; lineW = wPx; }
+            else { lineW += (lineW > 0 ? 5 : 0) + wPx; }
+        }
+        chipsH = lines * chipLineH + 5;
+    }
 
     /* --- Fusszeile (Hoehe vorab reservieren) ---------------------------- */
 
@@ -271,9 +434,24 @@ export function renderScatterMultiples(
         footerH = Math.round(footerLines * fFs * 1.35) + 11;
     }
 
+    /* --- Side-Panel: Breite vorab, das Raster bekommt den Rest ---------- */
+
+    const panelCfg = opts.panel ||
+        { show: false, widthPx: 250, showDetailCard: false, initialCollapsed: false };
+    const panelShow = panelCfg.show === true;
+    const panelCollapsed = panelShow
+        ? (carriedCollapsed === null ? panelCfg.initialCollapsed === true : carriedCollapsed)
+        : false;
+    const panelFs = fs < PANEL_FS_FLOOR ? PANEL_FS_FLOOR : fs;
+    const panelWFull = Math.min(
+        Math.floor(W * PANEL_MAX_SHARE),
+        Math.round(Math.max(PANEL_MIN_W, panelCfg.widthPx > 0 ? panelCfg.widthPx : 250) * panelFs));
+    const panelW = panelShow ? (panelCollapsed ? PANEL_COLLAPSED_W : panelWFull) : 0;
+
     /* --- Raster --------------------------------------------------------- */
 
-    const gridH = Math.max(40, H - headerH - footerH);
+    const gridH = Math.max(40, H - titleH - headerH - chipsH - footerH);
+    const gridW = Math.max(MIN_W - PANEL_COLLAPSED_W, W - panelW);
 
     const nF = facetsIn.length;
     const explicitCols = opts.columns && opts.columns > 0 ? true : false;
@@ -281,7 +459,7 @@ export function renderScatterMultiples(
     // 1) Spaltenzahl: Vorgabe oder aus dem Seitenverhaeltnis, auf 1..8 geklemmt.
     let cols = explicitCols
         ? Math.round(opts.columns)
-        : Math.round(Math.sqrt(nF * (gridH > 0 ? W / gridH : 1) / 1.15));
+        : Math.round(Math.sqrt(nF * (gridH > 0 ? gridW / gridH : 1) / 1.15));
     if (!(cols >= 1)) { cols = 1; }
     if (cols > 8) { cols = 8; }
     if (cols > nF) { cols = nF; }
@@ -293,7 +471,7 @@ export function renderScatterMultiples(
     const minTileH = Math.round(MIN_TILE_H_BASE + MIN_TILE_FONT_PART * fs);
     const fitCols = function (start: number, reserve: number): number {
         let c = start;
-        while (c > 1 && (W - 2 * PAD - reserve - (c - 1) * GAP) / c < minTileW) { c--; }
+        while (c > 1 && (gridW - 2 * PAD - reserve - (c - 1) * GAP) / c < minTileW) { c--; }
         return c;
     };
     cols = fitCols(cols, 0);
@@ -309,11 +487,23 @@ export function renderScatterMultiples(
         rowsN = Math.ceil(nF / cols);
     }
     const tileW = Math.max(40, Math.floor(
-        (W - 2 * PAD - (scrollY ? SCROLLBAR : 0) - (cols - 1) * GAP) / cols));
+        (gridW - 2 * PAD - (scrollY ? SCROLLBAR : 0) - (cols - 1) * GAP) / cols));
+
+    // Flex-Zeile: links das Raster (nimmt den Rest), rechts das Panel.
+    const body = div();
+    body.style.boxSizing = "border-box";
+    body.style.flex = "1 1 auto";
+    body.style.display = "flex";
+    body.style.flexDirection = "row";
+    body.style.alignItems = "stretch";
+    body.style.minHeight = "0";
+    body.style.overflow = "hidden";
+    container.appendChild(body);
 
     const grid = div();
     grid.style.boxSizing = "border-box";
     grid.style.flex = "1 1 auto";
+    grid.style.minWidth = "0";
     grid.style.display = "grid";
     grid.style.gridTemplateColumns = "repeat(" + cols + ", " + tileW + "px)";
     grid.style.gridAutoRows = tileH + "px";
@@ -322,7 +512,7 @@ export function renderScatterMultiples(
     grid.style.overflowX = "hidden";
     grid.style.overflowY = scrollY ? "auto" : "hidden";
     grid.style.alignContent = "start";
-    container.appendChild(grid);
+    body.appendChild(grid);
 
     /* --- Statistik / Reihenfolge ---------------------------------------- */
 
@@ -801,6 +991,265 @@ export function renderScatterMultiples(
         });
     }
 
+    /* --- Side-Panel: Suche, Rangliste, Detailkarte ----------------------- */
+
+    if (panelShow) {
+        const panel = div();
+        panel.style.boxSizing = "border-box";
+        panel.style.flex = "0 0 " + panelW + "px";
+        panel.style.width = panelW + "px";
+        panel.style.minWidth = "0";
+        panel.style.display = "flex";
+        panel.style.flexDirection = "column";
+        panel.style.overflow = "hidden";
+        panel.style.background = tokens.surface;
+        panel.style.borderLeft = "1px solid " + tokens.border;
+        panel.setAttribute("data-panel", panelCollapsed ? "collapsed" : "expanded");
+        body.appendChild(panel);
+
+        // Klicks im Panel sind nie Hintergrundklicks.
+        panel.addEventListener("click", function (ev: MouseEvent) {
+            ev.stopPropagation();
+            const r = rowOfDeep(ev.target, panel);
+            if (r !== null && opts.onClick) { opts.onClick(r, ev); }
+        });
+
+        const pFs = 10.5 * fs;
+        const rowH = Math.round(PANEL_ROW_BASE * fs);
+
+        let searchEl: HTMLInputElement | null = null;
+
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.style.boxSizing = "border-box";
+        toggle.style.flex = "0 0 auto";
+        toggle.style.width = (PANEL_COLLAPSED_W - 4) + "px";
+        toggle.style.height = Math.round(18 * fs) + "px";
+        toggle.style.padding = "0";
+        toggle.style.border = "1px solid " + tokens.border;
+        toggle.style.borderRadius = "5px";
+        toggle.style.background = tokens.card;
+        toggle.style.color = tokens.muted;
+        toggle.style.fontFamily = FONT_STACK;
+        toggle.style.fontSize = (11 * fs).toFixed(1) + "px";
+        toggle.style.lineHeight = "1";
+        toggle.style.cursor = "pointer";
+        toggle.appendChild(textNode(panelCollapsed ? "«" : "»"));
+        toggle.title = panelCollapsed ? "Rangliste einblenden" : "Rangliste ausblenden";
+        toggle.setAttribute("data-panel-toggle", panelCollapsed ? "collapsed" : "expanded");
+        toggle.addEventListener("click", function () {
+            carryCollapsed = !panelCollapsed;
+            // Suchtext ueberlebt auch den eingeklappten Zwischenzustand.
+            carrySearch = searchEl ? searchEl.value : carriedSearch;
+            renderScatterMultiples(root, input, opts);
+        });
+
+        if (panelCollapsed) {
+            const bar = div();
+            bar.style.display = "flex";
+            bar.style.justifyContent = "center";
+            bar.style.padding = "6px 2px";
+            bar.appendChild(toggle);
+            panel.appendChild(bar);
+        } else {
+            /* Kopf: Suchfeld + Einklapp-Knopf */
+            const head = div();
+            head.style.boxSizing = "border-box";
+            head.style.display = "flex";
+            head.style.alignItems = "center";
+            head.style.gap = "4px";
+            head.style.flex = "0 0 auto";
+            head.style.padding = "6px";
+            panel.appendChild(head);
+
+            const search = document.createElement("input");
+            search.type = "search";
+            search.placeholder = "Suchen…";
+            search.value = carriedSearch;
+            search.style.boxSizing = "border-box";
+            search.style.flex = "1 1 auto";
+            search.style.minWidth = "0";
+            search.style.padding = "3px 6px";
+            search.style.border = "1px solid " + tokens.border;
+            search.style.borderRadius = "6px";
+            search.style.background = tokens.card;
+            search.style.color = tokens.ink;
+            search.style.fontFamily = FONT_STACK;
+            search.style.fontSize = (11 * fs).toFixed(1) + "px";
+            search.style.setProperty("color-scheme", dark ? "dark" : "light");
+            head.appendChild(search);
+            head.appendChild(toggle);
+            searchEl = search;
+
+            /* Rangliste: einmal aufbauen, Suche blendet nur aus */
+            const list = div();
+            list.style.boxSizing = "border-box";
+            list.style.flex = "1 1 auto";
+            list.style.minHeight = "0";
+            list.style.overflowY = "auto";
+            list.style.overflowX = "hidden";
+            list.style.padding = "0 2px 6px";
+            panel.appendChild(list);
+
+            const order: number[] = [];
+            for (let i = 0; i < rows.length; i++) {
+                if (ys[i] !== null) { order.push(i); }
+            }
+            order.sort(function (a, b) {
+                const d = (ys[b] as number) - (ys[a] as number);
+                return d !== 0 ? d : a - b;
+            });
+
+            const listEls: HTMLDivElement[] = [];
+            const listKeys: string[] = [];
+            const elByRow: HTMLDivElement[] = new Array(rows.length);
+
+            for (let k = 0; k < order.length; k++) {
+                const ri = order[k];
+                const label = rows[ri] ? rows[ri].label || "" : "";
+                const item = div();
+                item.style.boxSizing = "border-box";
+                item.style.display = "flex";
+                item.style.alignItems = "center";
+                item.style.gap = "5px";
+                item.style.height = rowH + "px";
+                item.style.padding = "0 5px";
+                item.style.borderLeft = "3px solid " +
+                    (pinRow === ri ? tokens.accent : "transparent");
+                item.style.borderRadius = "3px";
+                item.style.fontSize = pFs.toFixed(1) + "px";
+                item.style.lineHeight = rowH + "px";
+                item.style.cursor = "pointer";
+                if (opts.dim && opts.dim(ri) === true) { item.style.opacity = "0.35"; }
+                item.setAttribute("data-row", String(ri));
+                item.setAttribute("data-rank", String(k + 1));
+                item.title = label;
+
+                const rk = span();
+                rk.style.flex = "0 0 auto";
+                rk.style.minWidth = Math.round(20 * fs) + "px";
+                rk.style.textAlign = "right";
+                rk.style.color = tokens.muted;
+                rk.style.fontVariantNumeric = "tabular-nums";
+                rk.style.pointerEvents = "none";
+                rk.appendChild(textNode(String(k + 1)));
+                item.appendChild(rk);
+
+                const dot = span();
+                dot.style.flex = "0 0 auto";
+                dot.style.width = "6px";
+                dot.style.height = "6px";
+                dot.style.borderRadius = "50%";
+                dot.style.display = "inline-block";
+                dot.style.background = colorFor(colorIdx[ri]);
+                dot.style.pointerEvents = "none";
+                item.appendChild(dot);
+
+                const nm = span();
+                nm.style.flex = "1 1 auto";
+                nm.style.minWidth = "0";
+                nm.style.color = tokens.ink;
+                nm.style.pointerEvents = "none";
+                ellipsis(nm);
+                nm.appendChild(textNode(label));
+                item.appendChild(nm);
+
+                const vl = span();
+                vl.style.flex = "0 0 auto";
+                vl.style.color = tokens.muted;
+                vl.style.fontVariantNumeric = "tabular-nums";
+                vl.style.pointerEvents = "none";
+                vl.appendChild(textNode(fmtY(opts, ys[ri] as number)));
+                item.appendChild(vl);
+
+                list.appendChild(item);
+                listEls.push(item);
+                listKeys.push(label.toLowerCase());
+                elByRow[ri] = item;
+            }
+
+            /* Detailkarte als Overlay links neben dem Panel */
+            let card: HTMLDivElement | null = null;
+            if (panelCfg.showDetailCard === true) {
+                card = div();
+                card.style.boxSizing = "border-box";
+                card.style.position = "absolute";
+                card.style.right = (panelW + 6) + "px";
+                card.style.top = (titleH + headerH + chipsH + 6) + "px";
+                card.style.width = Math.max(190, Math.round(230 * panelFs)) + "px";
+                card.style.maxHeight = Math.max(60, gridH - 12) + "px";
+                card.style.overflow = "hidden";
+                card.style.padding = "7px 9px";
+                card.style.background = tokens.card;
+                card.style.border = "1px solid " + tokens.border;
+                card.style.borderRadius = "8px";
+                card.style.boxShadow = "0 2px 10px rgba(0,0,0,0.18)";
+                card.style.pointerEvents = "none";
+                card.style.zIndex = "5";
+                card.style.display = "none";
+                card.setAttribute("data-card", "1");
+                container.appendChild(card);
+            }
+
+            const views = buildMeasureViews(input, ys, facetsIn);
+
+            const showCard = function (r: number | null): void {
+                if (!card) { return; }
+                const t = r !== null ? r : pinRow;
+                if (t === null || t < 0 || t >= rows.length) {
+                    card.style.display = "none";
+                    return;
+                }
+                clear(card);
+                fillCard(card, t, views, rows, legend, colorFor, tokens, fs, opts);
+                card.style.display = "block";
+                card.setAttribute("data-row", String(t));
+            };
+
+            let ghost: HTMLDivElement | null = null;
+            const setGhost = function (el: HTMLDivElement | null): void {
+                if (ghost && ghost !== el) { ghost.style.background = "transparent"; }
+                ghost = el;
+                if (ghost) { ghost.style.background = tokens.grid; }
+            };
+
+            list.addEventListener("pointerover", function (ev: Event) {
+                const r = rowOfDeep(ev.target, list);
+                if (r === null || r === hoverRow) { return; }
+                hoverRow = r;
+                hoverFacet = null;          // Cross-Highlight in ALLEN Facetten
+                refreshEmphasis();
+                setGhost(elByRow[r] || null);
+                showCard(r);
+            });
+            list.addEventListener("pointerout", function (ev: Event) {
+                if (rowOfDeep(ev.target, list) === null) { return; }
+                hoverRow = null;
+                hoverFacet = null;
+                refreshEmphasis();
+                setGhost(null);
+                showCard(null);
+            });
+
+            search.addEventListener("input", function () {
+                const q = (search.value || "").toLowerCase();
+                for (let i = 0; i < listEls.length; i++) {
+                    listEls[i].style.display =
+                        q === "" || listKeys[i].indexOf(q) >= 0 ? "flex" : "none";
+                }
+            });
+            if (carriedSearch.length > 0) {
+                const q0 = carriedSearch.toLowerCase();
+                for (let i = 0; i < listEls.length; i++) {
+                    listEls[i].style.display =
+                        listKeys[i].indexOf(q0) >= 0 ? "flex" : "none";
+                }
+            }
+
+            showCard(null);   // Pin dauerhaft zeigen, sonst nichts
+        }
+    }
+
     refreshEmphasis();
 
     /* --- Fusszeile ------------------------------------------------------ */
@@ -836,6 +1285,28 @@ function rowOf(target: EventTarget | null): number | null {
     if (a === null || a === undefined || a === "") { return null; }
     const n = parseInt(a, 10);
     return isFinite(n) ? n : null;
+}
+
+/** wie rowOf, sucht das Attribut aber auch an Vorfahren bis `stop`. */
+function rowOfDeep(target: EventTarget | null, stop: Element | null): number | null {
+    let el = target as Element | null;
+    let guard = 0;
+    while (el && guard < 12) {
+        const r = rowOf(el);
+        if (r !== null) { return r; }
+        if (stop && el === stop) { return null; }
+        el = el.parentNode as Element | null;
+        guard++;
+    }
+    return null;
+}
+
+function fmtY(opts: RenderOptions, v: number): string {
+    return opts.formatY ? opts.formatY(v) : String(v);
+}
+
+function fmtX(opts: RenderOptions, key: string, v: number): string {
+    return opts.formatX ? opts.formatX(key, v) : String(v);
 }
 
 function appendHint(host: HTMLElement, msg: string, tokens: RenderTokens, fs: number): void {
@@ -899,6 +1370,189 @@ function makeChip(
         if (opts.onLegendClick) { opts.onLegendClick(idx, ev); }
     });
     return chip;
+}
+
+/** Chip der Y-Kennzahl-Auswahl: wie ein Legenden-Chip, aber ohne Farbpunkt;
+ *  die aktive Kennzahl ist invertiert. */
+function makeYChip(
+    m: { key: string; label: string }, active: boolean,
+    tokens: RenderTokens, fontPx: number, opts: RenderOptions
+): HTMLDivElement {
+    const name = m.label || m.key;
+    const chip = div();
+    chip.style.boxSizing = "border-box";
+    chip.style.display = "inline-flex";
+    chip.style.alignItems = "center";
+    chip.style.padding = "2px 8px";
+    chip.style.border = "1px solid " + (active ? tokens.ink : tokens.border);
+    chip.style.borderRadius = "999px";
+    chip.style.background = active ? tokens.ink : tokens.card;
+    chip.style.color = active ? tokens.card : tokens.ink;
+    chip.style.fontSize = fontPx.toFixed(1) + "px";
+    chip.style.lineHeight = "1.5";
+    chip.style.whiteSpace = "nowrap";
+    chip.style.cursor = "pointer";
+    chip.style.flex = "0 0 auto";
+    chip.style.maxWidth = "160px";
+    chip.style.overflow = "hidden";
+    chip.style.textOverflow = "ellipsis";
+    chip.setAttribute("data-ykey", m.key);
+    if (active) { chip.setAttribute("data-yactive", "1"); }
+    chip.appendChild(textNode(name));
+    chip.title = name;
+    chip.addEventListener("click", function (ev: MouseEvent) {
+        ev.stopPropagation();
+        if (opts.onYSelect) { opts.onYSelect(m.key, ev); }
+    });
+    return chip;
+}
+
+/** Kennzahlen fuer die Detailkarte: Y zuerst, danach die Facetten in
+ *  Eingabereihenfolge. */
+function buildMeasureViews(
+    input: RenderInput, ys: (number | null)[], facetsIn: FacetInput[]
+): MeasureView[] {
+    const out: MeasureView[] = [];
+    const push = function (label: string, key: string, isY: boolean,
+        vals: (number | null)[]): void {
+        let mn = Infinity;
+        let mx = -Infinity;
+        let n = 0;
+        for (let i = 0; i < vals.length; i++) {
+            const v = vals[i];
+            if (typeof v !== "number" || !isFinite(v)) { continue; }
+            n++;
+            if (v < mn) { mn = v; }
+            if (v > mx) { mx = v; }
+        }
+        out.push({ label: label, key: key, isY: isY, vals: vals, min: mn, max: mx, n: n });
+    };
+    push(input.yLabel || "Y", "", true, ys);
+    for (let f = 0; f < facetsIn.length; f++) {
+        const fi = facetsIn[f];
+        push(fi.label || fi.key || "", fi.key || "", false, fi.x || []);
+    }
+    return out;
+}
+
+/** Rang absteigend innerhalb der nicht-null-Werte (gleiche Werte, gleicher Rang). */
+function rankIn(mv: MeasureView, v: number): number {
+    let greater = 0;
+    for (let i = 0; i < mv.vals.length; i++) {
+        const w = mv.vals[i];
+        if (typeof w !== "number" || !isFinite(w)) { continue; }
+        if (w > v) { greater++; }
+    }
+    return greater + 1;
+}
+
+/** Fuellt die Detailkarte fuer eine Zeile (Land). */
+function fillCard(
+    card: HTMLElement, r: number, views: MeasureView[],
+    rows: RowInput[], legend: LegendItem[],
+    colorFor: (c: number) => string, tokens: RenderTokens,
+    fs: number, opts: RenderOptions
+): void {
+    const row = rows[r];
+    const label = row ? row.label || "" : "";
+    const ci = row && typeof row.colorIdx === "number" ? row.colorIdx : -1;
+    const col = colorFor(ci);
+    const groupName = ci >= 0 && ci < legend.length && legend[ci] ? legend[ci].name : "";
+
+    const head = div();
+    head.style.marginBottom = "5px";
+    card.appendChild(head);
+
+    const nm = div();
+    nm.style.fontSize = (12 * fs).toFixed(1) + "px";
+    nm.style.fontWeight = "700";
+    nm.style.color = tokens.ink;
+    ellipsis(nm);
+    nm.appendChild(textNode(label));
+    head.appendChild(nm);
+
+    if (groupName.length > 0) {
+        const gp = div();
+        gp.style.fontSize = (9.5 * fs).toFixed(1) + "px";
+        gp.style.color = col;
+        ellipsis(gp);
+        gp.appendChild(textNode(groupName));
+        head.appendChild(gp);
+    }
+
+    for (let i = 0; i < views.length; i++) {
+        const mv = views[i];
+        const raw = r < mv.vals.length ? mv.vals[r] : null;
+        const has = typeof raw === "number" && isFinite(raw);
+        const v = has ? raw as number : 0;
+
+        const item = div();
+        item.style.marginTop = "4px";
+        item.setAttribute("data-measure", mv.key === "" ? "__y__" : mv.key);
+        card.appendChild(item);
+
+        const line = div();
+        line.style.display = "flex";
+        line.style.alignItems = "baseline";
+        line.style.gap = "5px";
+        item.appendChild(line);
+
+        const cap = div();
+        cap.style.flex = "1 1 auto";
+        cap.style.minWidth = "0";
+        cap.style.fontSize = (9.5 * fs).toFixed(1) + "px";
+        cap.style.color = tokens.muted;
+        ellipsis(cap);
+        cap.appendChild(textNode(mv.label));
+        cap.title = mv.label;
+        line.appendChild(cap);
+
+        const val = div();
+        val.style.flex = "0 0 auto";
+        val.style.fontSize = (10 * fs).toFixed(1) + "px";
+        val.style.color = tokens.ink;
+        val.style.fontVariantNumeric = "tabular-nums";
+        val.appendChild(textNode(
+            has ? (mv.isY ? fmtY(opts, v) : fmtX(opts, mv.key, v)) : "—"));
+        line.appendChild(val);
+
+        if (has) {
+            const rk = div();
+            rk.style.flex = "0 0 auto";
+            rk.style.fontSize = (9 * fs).toFixed(1) + "px";
+            rk.style.color = tokens.muted;
+            rk.style.fontVariantNumeric = "tabular-nums";
+            rk.style.whiteSpace = "nowrap";
+            rk.setAttribute("data-rank", String(rankIn(mv, v)));
+            rk.appendChild(textNode("Rang " + rankIn(mv, v) + "/" + mv.n));
+            line.appendChild(rk);
+
+            // Min-Max-Verteilungsbalken mit Positions-Marker
+            const track = div();
+            track.style.position = "relative";
+            track.style.height = "4px";
+            track.style.marginTop = "2px";
+            track.style.borderRadius = "2px";
+            track.style.background = tokens.grid;
+            track.setAttribute("data-bar", "1");
+            item.appendChild(track);
+
+            const span2 = mv.max - mv.min;
+            let t = span2 > 0 ? (v - mv.min) / span2 : 0.5;
+            if (!(t >= 0)) { t = 0; }
+            if (t > 1) { t = 1; }
+            const mk = div();
+            mk.style.position = "absolute";
+            mk.style.top = "0";
+            mk.style.width = "8px";
+            mk.style.height = "4px";
+            mk.style.marginLeft = "-4px";
+            mk.style.borderRadius = "1px";
+            mk.style.background = col;
+            mk.style.left = (t * 100).toFixed(1) + "%";
+            track.appendChild(mk);
+        }
+    }
 }
 
 /** Zeichnet eine Fit-Gerade, geklemmt auf Datenbereich und Plotflaeche. */
