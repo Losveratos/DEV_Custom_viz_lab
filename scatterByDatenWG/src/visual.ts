@@ -42,6 +42,12 @@ export class Visual implements IVisual {
     private formattingSettingsService: FormattingSettingsService;
     private parsed: Parsed | null = null;
     private lastOptions: VisualUpdateOptions | null = null;
+    /* Y-Wahl lokal halten: persistProperties wird in der Leseansicht des
+       Service verworfen (kein Update-Zyklus) — der Selector muss deshalb
+       ohne Persistenz sofort funktionieren. Die Persistenz bleibt als
+       Bonus für Desktop/Bearbeitungsmodus. */
+    private localYKey: string | null = null;
+    private lastDataView: DataView | undefined;
     private selectedRows: Set<number> = new Set();
     private legendSel: number | null = null;
     private fmt: Intl.NumberFormat;
@@ -102,7 +108,9 @@ export class Visual implements IVisual {
             if (xCols.length < 2) return null;
             const persisted = String(
                 (dataView.metadata.objects?.facetten as { yKey?: string } | undefined)?.yKey || "");
-            yCol = xCols.find(c => keyOf(c) === persisted) || xCols[0];
+            yCol = (this.localYKey ? xCols.find(c => keyOf(c) === this.localYKey) : undefined)
+                || xCols.find(c => keyOf(c) === persisted)
+                || xCols[0];
             facetCols = xCols.filter(c => c !== yCol);
             measures = xCols.map(c => ({ key: keyOf(c), label: c.source.displayName }));
         } else {
@@ -186,7 +194,8 @@ export class Visual implements IVisual {
                 options.dataViews?.[0]
             );
             this.lastOptions = options;
-            this.parsed = this.parse(options.dataViews?.[0]);
+            this.lastDataView = options.dataViews?.[0];
+            this.parsed = this.parse(this.lastDataView);
             // Fremd-Selektion (Highlights) macht lokale Auswahl obsolet.
             if (this.parsed?.highlights) { this.selectedRows.clear(); this.legendSel = null; }
             this.redraw();
@@ -254,9 +263,16 @@ export class Visual implements IVisual {
                 ? String(s.facettenCard.ySelector.value.value) as "none" | "dropdown" | "chips"
                 : "none",
             onYSelect: (key) => {
-                this.host.persistProperties({
-                    merge: [{ objectName: "facetten", selector: null, properties: { yKey: key } }]
-                });
+                // Sofort lokal umschalten (funktioniert auch in der
+                // Leseansicht), Persistenz best effort hinterher.
+                this.localYKey = key;
+                this.parsed = this.parse(this.lastDataView);
+                this.redraw();
+                try {
+                    this.host.persistProperties({
+                        merge: [{ objectName: "facetten", selector: null, properties: { yKey: key } }]
+                    });
+                } catch (e) { /* Leseansicht: Persistenz nicht erlaubt — lokal reicht */ }
             },
             panel: {
                 show: !!s.panelCard.show.value,

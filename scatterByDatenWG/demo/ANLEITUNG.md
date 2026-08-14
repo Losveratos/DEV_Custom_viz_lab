@@ -140,6 +140,8 @@ Klick/Auswahl dort wechselt sofort die aktive Y-Kennzahl für alle Facetten,
 Regressionslinien und Sortierungen und wird dauerhaft gemerkt (auch nach
 Neuladen des Reports).
 
+> **Service/Leseansicht:** Der Y-Wechsel wirkt sofort, wird dort aber nur für die Sitzung gehalten (Power BI erlaubt Viewern kein Zurückschreiben in den Report). Im Bearbeitungsmodus/Desktop wird die Auswahl dauerhaft gespeichert.
+
 ## 6. Empfohlene Seite
 
 - **Y** = `life_satisfaction_0_10` gegen 6–8 **X**-Indikatoren gleichzeitig
