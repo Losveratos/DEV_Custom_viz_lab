@@ -146,14 +146,26 @@ class FacettenCardSettings extends FormattingSettingsCard {
         value: item("dropdown", "Dropdown im Kopf")
     });
 
-    // Hinweis: "yKey" (persistierte, im Visual gewählte Y-Kennzahl) ist bewusst kein
-    // Slice hier – wird nur in capabilities.json definiert und von visual.ts per
-    // persistProperties geschrieben/gelesen, taucht daher nicht im Formatbereich auf.
+    xSelector = new formattingSettings.ItemDropdown({
+        name: "xSelector",
+        displayName: "X-Facetten-Auswahl im Visual",
+        items: [
+            item("none", "Keine Auswahl im Visual"),
+            item("chips", "Chip-Leiste (ein-/ausblenden)")
+        ],
+        value: item("chips", "Chip-Leiste (ein-/ausblenden)")
+    });
+
+    // Hinweis: "yKey" und "hiddenX" (persistierter, im Visual gewählter Zustand)
+    // sind bewusst keine Slices hier – nur in capabilities.json definiert, von
+    // visual.ts per persistProperties geschrieben/gelesen, daher unsichtbar im
+    // Formatbereich.
 
     name: string = "facetten";
     displayName: string = "Facetten";
     slices: Array<FormattingSettingsSlice> = [
-        this.xScale, this.sortByR, this.zeroBaseline, this.columns, this.ySelector
+        this.xScale, this.sortByR, this.zeroBaseline, this.columns,
+        this.ySelector, this.xSelector
     ];
 }
 

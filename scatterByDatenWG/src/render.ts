@@ -422,6 +422,74 @@ export function renderScatterMultiples(
         chipsH = lines * chipLineH + 5;
     }
 
+    /* --- X-Facetten-Auswahl als Chip-Zeile (ein-/ausblenden) ------------ */
+
+    const xToggles = (opts.xSelector === "chips" && opts.xToggles) ? opts.xToggles : [];
+    if (xToggles.length > 1) {
+        const cFs = 11 * fs;
+        const row = div();
+        row.style.boxSizing = "border-box";
+        row.style.display = "flex";
+        row.style.flexWrap = "wrap";
+        row.style.alignItems = "center";
+        row.style.gap = "5px";
+        row.style.flex = "0 0 auto";
+        row.style.padding = "0 " + PAD + "px 5px";
+        container.appendChild(row);
+
+        const tag = div();
+        tag.style.color = tokens.muted;
+        tag.style.fontSize = (cFs * 0.9).toFixed(1) + "px";
+        tag.appendChild(textNode("X:"));
+        row.appendChild(tag);
+
+        const chipLineH = Math.round(cFs * 1.5) + 6;
+        const avail = Math.max(40, W - 2 * PAD);
+        let lineW = 22;
+        let lines = 1;
+        for (let i = 0; i < xToggles.length; i++) {
+            const t = xToggles[i];
+            const chip = div();
+            chip.setAttribute("data-xkey", t.key);
+            chip.style.boxSizing = "border-box";
+            chip.style.display = "inline-flex";
+            chip.style.alignItems = "center";
+            chip.style.maxWidth = "160px";
+            chip.style.padding = "1px 8px";
+            chip.style.borderRadius = "999px";
+            chip.style.fontSize = cFs.toFixed(1) + "px";
+            chip.style.cursor = "pointer";
+            chip.style.userSelect = "none";
+            if (t.hidden) {
+                chip.style.border = "1px dashed " + tokens.border;
+                chip.style.background = "transparent";
+                chip.style.color = tokens.muted;
+                chip.style.textDecoration = "line-through";
+                chip.title = (t.label || t.key) + " — ausgeblendet, Klick blendet ein";
+            } else {
+                chip.style.border = "1px solid " + tokens.border;
+                chip.style.background = tokens.card;
+                chip.style.color = tokens.ink;
+                chip.title = (t.label || t.key) + " — Klick blendet aus";
+            }
+            const lbl = div();
+            ellipsis(lbl);
+            lbl.appendChild(textNode(t.label || t.key));
+            chip.appendChild(lbl);
+            chip.addEventListener("click", (function (key: string) {
+                return function (ev: MouseEvent) {
+                    ev.stopPropagation();
+                    if (opts.onXToggle) { opts.onXToggle(key, ev); }
+                };
+            })(t.key));
+            row.appendChild(chip);
+            const wPx = Math.min(160, Math.ceil((t.label || t.key).length * cFs * 0.55) + 18);
+            if (lineW > 0 && lineW + 5 + wPx > avail) { lines++; lineW = wPx; }
+            else { lineW += (lineW > 0 ? 5 : 0) + wPx; }
+        }
+        chipsH += lines * chipLineH + 5;
+    }
+
     /* --- Fusszeile (Hoehe vorab reservieren) ---------------------------- */
 
     const footerText = input.footer || "";

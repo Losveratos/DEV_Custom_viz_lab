@@ -98,6 +98,15 @@ export interface RenderOptions {
     ySelector: "none" | "dropdown" | "chips";
     onYSelect(key: string, ev: Event): void;
 
+    /** X-Facetten im Visual ein-/ausblenden: Chip-Zeile mit allen
+     *  X-Kennzahlen; hidden=true wird gedimmt/durchgestrichen gezeigt.
+     *  input.facets enthält bereits NUR die sichtbaren Facetten — der
+     *  Renderer plottet unverändert, die Chips sind reine Bedienung.
+     *  Leeres Array oder xSelector "none" = Zeile weglassen. */
+    xSelector: "none" | "chips";
+    xToggles: { key: string; label: string; hidden: boolean }[];
+    onXToggle(key: string, ev: Event): void;
+
     /** Side-Panel: Ranking nach Y (absteigend) + Suche + Detailkarte.
      *  Hover auf Zeile = Cross-Highlight in allen Facetten (engine-intern),
      *  Klick = onClick(row). Detailkarte: alle Kennzahlen des Landes mit

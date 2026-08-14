@@ -31,6 +31,7 @@ interface Parsed {
     facetCols: DataViewValueColumn[];
     sizeCol: DataViewValueColumn | null;
     highlights: boolean;
+    xToggles: { key: string; label: string; hidden: boolean }[];
 }
 
 export class Visual implements IVisual {
@@ -47,6 +48,9 @@ export class Visual implements IVisual {
        ohne Persistenz sofort funktionieren. Die Persistenz bleibt als
        Bonus für Desktop/Bearbeitungsmodus. */
     private localYKey: string | null = null;
+    /* dito für ausgeblendete X-Facetten (null = noch nichts lokal getoggelt,
+       dann gilt der persistierte Stand) */
+    private localHiddenX: Set<string> | null = null;
     private lastDataView: DataView | undefined;
     private selectedRows: Set<number> = new Set();
     private legendSel: number | null = null;
@@ -118,6 +122,17 @@ export class Visual implements IVisual {
         }
         if (!facetCols.length) return null;
 
+        /* X-Facetten ein-/ausblenden: lokaler Stand vor persistiertem. */
+        const persistedHidden = String(
+            (dataView.metadata.objects?.facetten as { hiddenX?: string } | undefined)?.hiddenX || "");
+        const hiddenX = this.localHiddenX !== null
+            ? this.localHiddenX
+            : new Set(persistedHidden.split("|").filter(k => k));
+        const xToggles = facetCols.map(c => ({
+            key: keyOf(c), label: c.source.displayName, hidden: hiddenX.has(keyOf(c))
+        }));
+        const visibleFacetCols = facetCols.filter(c => !hiddenX.has(keyOf(c)));
+
         const n = detailCol.values.length;
         const legendNames: string[] = [];
         const legendIndex = new Map<string, number>();
@@ -158,7 +173,7 @@ export class Visual implements IVisual {
             return { name, color };
         });
 
-        const facets: FacetInput[] = facetCols.map(col => ({
+        const facets: FacetInput[] = visibleFacetCols.map(col => ({
             key: col.source.queryName || col.source.displayName,
             label: col.source.displayName,
             x: Array.from({ length: n }, (_, i) => this.num(col.values[i]))
@@ -180,7 +195,7 @@ export class Visual implements IVisual {
                 measures, yKey: keyOf(yCol)
             },
             detailCol, legendCol, legendFirstRow,
-            yCol, facetCols, sizeCol, highlights
+            yCol, facetCols, sizeCol, highlights, xToggles
         };
     }
 
@@ -271,6 +286,23 @@ export class Visual implements IVisual {
                 try {
                     this.host.persistProperties({
                         merge: [{ objectName: "facetten", selector: null, properties: { yKey: key } }]
+                    });
+                } catch (e) { /* Leseansicht: Persistenz nicht erlaubt — lokal reicht */ }
+            },
+            xSelector: String(s.facettenCard.xSelector.value.value) as "none" | "chips",
+            xToggles: this.parsed ? this.parsed.xToggles : [],
+            onXToggle: (key) => {
+                const cur = this.localHiddenX !== null
+                    ? this.localHiddenX
+                    : new Set((this.parsed?.xToggles || []).filter(t => t.hidden).map(t => t.key));
+                if (cur.has(key)) cur.delete(key); else cur.add(key);
+                this.localHiddenX = cur;
+                this.parsed = this.parse(this.lastDataView);
+                this.redraw();
+                try {
+                    this.host.persistProperties({
+                        merge: [{ objectName: "facetten", selector: null,
+                            properties: { hiddenX: [...cur].join("|") } }]
                     });
                 } catch (e) { /* Leseansicht: Persistenz nicht erlaubt — lokal reicht */ }
             },

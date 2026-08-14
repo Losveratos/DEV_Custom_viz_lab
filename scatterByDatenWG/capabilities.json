@@ -123,6 +123,17 @@
                 },
                 "yKey": {
                     "type": { "text": true }
+                },
+                "xSelector": {
+                    "type": {
+                        "enumeration": [
+                            { "displayName": "Keine Auswahl im Visual", "value": "none" },
+                            { "displayName": "Chip-Leiste (ein-/ausblenden)", "value": "chips" }
+                        ]
+                    }
+                },
+                "hiddenX": {
+                    "type": { "text": true }
                 }
             }
         },
