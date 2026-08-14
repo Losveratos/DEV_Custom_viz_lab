@@ -140,6 +140,11 @@ Klick/Auswahl dort wechselt sofort die aktive Y-Kennzahl für alle Facetten,
 Regressionslinien und Sortierungen und wird dauerhaft gemerkt (auch nach
 Neuladen des Reports).
 
+- **X-Facetten ein-/ausblenden:** Unter der Y-Auswahl listet eine Chip-Leiste
+  alle X-Kennzahlen; ein Klick blendet die Facette aus (Chip wird gedimmt und
+  durchgestrichen), erneuter Klick wieder ein. Abschaltbar unter *Facetten →
+  X-Facetten-Auswahl im Visual*. Gleiche Speicherlogik wie der Y-Wechsel.
+
 > **Service/Leseansicht:** Der Y-Wechsel wirkt sofort, wird dort aber nur für die Sitzung gehalten (Power BI erlaubt Viewern kein Zurückschreiben in den Report). Im Bearbeitungsmodus/Desktop wird die Auswahl dauerhaft gespeichert.
 
 ## 6. Empfohlene Seite
