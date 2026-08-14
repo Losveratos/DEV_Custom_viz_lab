@@ -1,0 +1,17 @@
+{
+		"version": "1.0.0.0",
+		"author": {"name":"DEV Custom Viz Lab","email":"michael.tenner84@gmail.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/scatterByDatenWG7A3E52C1B94D4F0AA1C2E8D5F6B70301.pbiviz.json"
+			}
+		],
+		"visual": {"name":"scatterByDatenWG","displayName":"Scatter byDatenWG","guid":"scatterByDatenWG7A3E52C1B94D4F0AA1C2E8D5F6B70301","visualClassName":"Visual","version":"1.0.0.0","description":"Scatter-Small-Multiples: ein Basis-Measure auf Y, jedes weitere Measure als Facette auf X. Punkte = Detail (Land), Farbe = Legende (Kontinent), Größe = Measure (Bevölkerung). OLS-Regression gesamt oder je Gruppe mit R², Facetten sortiert nach |r|, Auto-Log-Skala, Quellen-Fußzeile.","supportUrl":"https://github.com/losveratos/dev_custom_viz_lab/issues","gitHubUrl":"https://github.com/losveratos/dev_custom_viz_lab"},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}

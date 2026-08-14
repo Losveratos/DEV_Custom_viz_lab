@@ -79,6 +79,8 @@ export interface RenderOptions {
     /** Skalierung aller Schriften (1 = Basis) */
     fontScale: number;
     footerFontSize: number;
+    /** Legenden-Chips in der Kopfzeile anzeigen (default true) */
+    showLegend?: boolean;
 
     /** Zeilen abdunkeln (Cross-Filter/Highlight von außen); null = nichts dimmen */
     dim: ((row: number) => boolean) | null;

@@ -212,6 +212,7 @@ export class Visual implements IVisual {
             sizeEnabled: !!s.darstellungCard.sizeEnabled.value,
             fontScale: Math.max(0.5, (Number(s.darstellungCard.fontScale.value) || 100) / 100),
             footerFontSize: Number(s.fusszeileCard.fontSize.value) || 9,
+            showLegend: !!s.darstellungCard.showLegend.value,
             dim: this.dimFn(),
             highlightRow: this.selectedRows.size === 1 ? [...this.selectedRows][0] : null,
             formatY: (v) => this.fmt.format(v),
